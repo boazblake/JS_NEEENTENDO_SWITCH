@@ -1,0 +1,10 @@
+{
+  "extends":["recommended"],
+  "rules":{
+    "no-unsed-vars":"error",
+    "eqeqeq": "error",
+    "no-console":"warn",
+    "curly":"error",
+    "prefer-const":"error"
+  }
+}       
