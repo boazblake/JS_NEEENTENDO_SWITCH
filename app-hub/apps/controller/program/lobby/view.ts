@@ -5,16 +5,16 @@ export const view = (model: Model) =>
   div(
     {
       className:
-        'min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white text-center'
+        'min-h-screen flex flex-col items-center justify-center has-background-dark has-text-white has-text-centered'
     },
     [
-      h1({ className: 'text-5xl font-bold mb-4' }, 'Lobby'),
+      h1({ className: 'title is-1' }, 'Lobby'),
       p(
-        { className: 'text-lg text-slate-400 mb-2' },
+        { className: 'subtitle is-4 has-text-grey-lighter mb-2' },
         `Session Code: ${model.session || '—'}`
       ),
       p(
-        { className: 'text-slate-500' },
+        { className: 'has-text-grey' },
         model.connected ? 'Connected!' : 'Waiting for host...'
       )
     ]
