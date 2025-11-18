@@ -6,7 +6,7 @@ import { sendIO } from './network.ts'
  * Registers a resize event listener and dispatches RESIZE messages.
  * Returns an IO cleanup function.
  */
-export const registerGlobalIO = (dispatch: (msg: Msg) => void) =>
+export const registerResizeIO = (dispatch: (msg: Msg) => void) =>
   Reader<DomEnv, IO<() => void>>((env) =>
     IO(() => {
       const resize = () =>

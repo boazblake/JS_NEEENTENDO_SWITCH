@@ -4,8 +4,8 @@ import { init } from './init.js'
 import { update } from './update.js'
 import { view } from './view.js'
 
-export const createProgram = (ws: WebSocket): Program<Model, Msg> => ({
-  init: init(),
-  update: (msg, model, dispatch) => update(msg, model, dispatch, ws),
+export const createProgram: Program<Model, Msg> = {
+  init,
+  update,
   view
-})
+}

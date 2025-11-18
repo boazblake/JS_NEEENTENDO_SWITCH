@@ -13,5 +13,17 @@ export const renderer = (root, vnode) => {
   }
 }
 
-export const { div, h1, h2, p, pre, button, section, input, ul, li, span } =
-  hh(hyperscript)
+export const {
+  div,
+  h1,
+  h2,
+  p,
+  pre,
+  button,
+  section,
+  input,
+  ul,
+  li,
+  span,
+  canvas
+} = hh(hyperscript)

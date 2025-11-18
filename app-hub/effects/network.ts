@@ -1,22 +1,24 @@
-import { Stream, Reader, IO, type DomEnv } from 'algebraic-js'
+import { Stream, Reader, IO, type DomEnv, type Dispatch } from 'algebraic-js'
+import { MessageType, NetworkMessage } from '@/shared/types.js'
 
 /**
  * Pure Reader<DomEnv, IO> for sending a message over WebSocket.
  * Describes the effect but does not execute it until interpreted
  * with a concrete environment containing `ws`.
  */
-export const sendMsg = (msg: any): Reader<DomEnv, IO<void>> =>
+
+export const sendMsg = (msg: NetworkMessage) =>
   Reader((env) =>
     IO(() => {
-      const data = JSON.stringify(msg)
-      console.log('data', data)
-      if (env.ws.readyState === WebSocket.OPEN) env.ws.send(data)
+      const ws = env.ws
+      const data = JSON.stringify({ ...msg, time: Date.now() })
+      if (ws.readyState === WebSocket.OPEN) ws.send(data)
       else {
         const onOpen = () => {
-          env.ws.send(data)
-          env.ws.removeEventListener('open', onOpen)
+          ws.send(data)
+          ws.removeEventListener('open', onOpen)
         }
-        env.ws.addEventListener('open', onOpen)
+        ws.addEventListener('open', onOpen)
       }
     })
   )
@@ -91,7 +93,7 @@ export const sendIO = (ws: WebSocket, msg: any): IO<void> =>
 /** Run the socket stream inside a concrete environment */
 export const runSocketStream = <T>(
   ws: WebSocket,
-  dispatch: (msg: any) => void,
+  dispatch: Dispatch,
   env: DomEnv
 ): (() => void) => {
   const stream = socketStream<T>(ws)

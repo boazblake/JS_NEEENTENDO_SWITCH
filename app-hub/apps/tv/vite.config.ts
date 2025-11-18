@@ -4,7 +4,13 @@ import path from 'path'
 export default defineConfig({
   root: 'apps/tv',
   cacheDir: '../../node_modules/.vite-tv',
-  server: { port: 5173 },
+  server: {
+    port: 5173,
+    https: {
+      key: './192.168.7.195+2-key.pem',
+      cert: './192.168.7.195+2.pem'
+    }
+  },
   build: { outDir: '../../dist/tv' },
   resolve: {
     alias: {

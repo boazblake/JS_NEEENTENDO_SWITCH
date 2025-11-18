@@ -1,11 +1,31 @@
+import { MessageType } from '@/shared/types.js'
+
 export type Model = {
-  host: 'TV'
-  players: Record<string, { id: string; name: string; slot?: number }>
-  count: number
+  ctx: CanvasRenderingContext2D | null
+  strokes: any[]
 }
 
 export type Msg =
-  | { type: 'REGISTER_PLAYER'; id: string; name: string }
-  | { type: 'ACK_PLAYER'; id: string; slot: number }
-  | { type: 'NETWORK_IN'; payload: any }
-  | { type: 'STATE_SYNC'; state: any }
+  | { type: MessageType.NETWORK_IN; payload: any }
+  | { type: MessageType.CLEAR_CANVAS }
+
+export type SprayStart = {
+  type: MessageType.SPRAY_START
+  id: string
+  color: string
+}
+
+export type SprayPoint = {
+  type: MessageType.SPRAY_POINT
+  id: string
+  x: number
+  y: number
+  pressure: number
+}
+
+export type SprayEnd = {
+  type: MessageType.SPRAY_END
+  id: string
+}
+
+export type SprayMsg = SprayStart | SprayPoint | SprayEnd

@@ -1,21 +1,33 @@
 import { IO } from 'algebraic-js'
 import { sendMsg } from '@/effects/network.js'
+import { MessageType } from '@/shared/types.js'
+import { init as lobbyInit } from './lobby/init.js'
+import { init as menuInit } from './menu/init.js'
+import { init as calibrationInit } from './calibration/init.js'
+import { init as sprayInit } from './spray-can/init.js'
 import type { Model } from './types.js'
 
-/**
- * TV init:
- * Generates a session code, returns the initial model and
- * a Reader<NetEnv, IO> describing a REGISTER_TV message.
- */
 export const init = IO(() => {
   const session = Math.random().toString(36).substring(2, 7).toUpperCase()
 
+  const lobby = lobbyInit.run().model
+  const menu = menuInit.run().model
+  const calibration = calibrationInit.run().model
+  const spray = sprayInit.run().model
+
+  const model: Model = {
+    session,
+    players: {},
+    status: 'idle',
+    screen: 'lobby',
+    lobby,
+    menu,
+    calibration,
+    spray
+  }
+
   return {
-    model: {
-      session,
-      players: {},
-      status: 'idle'
-    } as Model,
-    effects: [sendMsg({ type: 'REGISTER_TV', session })]
+    model,
+    effects: [sendMsg({ type: MessageType.REGISTER_TV, session })]
   }
 })

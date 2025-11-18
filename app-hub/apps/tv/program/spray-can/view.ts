@@ -1,28 +1,24 @@
-import { div, h1, canvas } from '@/renderer'
+import { div, canvas, h1 } from '@/shared/renderer.js'
 
-export const view = (model) =>
-  div({ class: 'relative w-screen h-screen bg-neutral-900 overflow-hidden' }, [
-    canvas({
-      id: 'sprayCanvas',
-      width: 1920,
-      height: 1080,
-      class: 'absolute top-0 left-0 w-full h-full'
-    }),
-    // Header overlay
-    div(
-      {
-        class:
-          'absolute top-0 left-0 w-full flex justify-between items-center p-6 pointer-events-none'
-      },
-      [
-        h1(
-          { class: 'text-4xl font-bold text-white drop-shadow-lg' },
-          'Spray-Can'
-        ),
-        div(
-          { class: 'text-lg font-mono text-teal-300' },
-          `Session: ${model.session}`
-        )
-      ]
-    )
-  ])
+export const view = () =>
+  div(
+    {
+      className:
+        'relative w-screen h-screen bg-slate-900 overflow-hidden text-white'
+    },
+    [
+      canvas({
+        id: 'sprayCanvas',
+        width: 1920,
+        height: 1080,
+        className: 'absolute top-0 left-0 w-full h-full bg-slate-900'
+      }),
+      h1(
+        {
+          className:
+            'absolute top-6 left-8 text-3xl font-bold text-pink-400 drop-shadow'
+        },
+        'Spray-Can'
+      )
+    ]
+  )

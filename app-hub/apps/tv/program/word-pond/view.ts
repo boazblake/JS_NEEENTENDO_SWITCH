@@ -1,8 +1,8 @@
-import { div, h2, p, ul, li } from '@/renderer.js'
+import { div, h2, p, ul, li } from '@/shared/renderer.js'
 import type { Model, Msg } from './types.js'
 
 export const view = (model: Model) =>
-  div({ class: 'tv-view' }, [
+  div({ className: 'tv-view' }, [
     h2({}, 'Connected Players'),
     ul(
       {},

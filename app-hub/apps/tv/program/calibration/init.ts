@@ -1,0 +1,7 @@
+import { IO } from 'algebraic-js'
+import type { Model } from './types.js'
+
+export const init = IO(() => ({
+  model: { markers: {}, flipPY: false } as Model,
+  effects: []
+}))

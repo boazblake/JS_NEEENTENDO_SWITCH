@@ -1,11 +1,11 @@
-import type { Program } from 'algebraic-js'
+import type { Program } from 'algebraic-js/core/types.js'
 import type { Model, Msg } from './types.js'
 import { init } from './init.js'
 import { update } from './update.js'
 import { view } from './view.js'
 
-export const createProgram = (ws: WebSocket): Program<Model, Msg> => ({
-  init: init(),
-  update: (msg, model, dispatch) => update(msg, model, dispatch, ws),
+export const program: Program<Model, Msg> = {
+  init,
+  update,
   view
-})
+}

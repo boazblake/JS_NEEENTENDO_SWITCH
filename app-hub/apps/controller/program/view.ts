@@ -1,27 +1,30 @@
-import { div, h1, h2 } from '@/renderer.js'
-import type { Model } from './types.js'
+import { div } from '@/shared/renderer.js'
+import type { Model, Msg } from './types.js'
+import { Screen } from '@/shared/types.js'
+import { program as Lobby } from './lobby/index.js'
+import { program as Menu } from './menu/index.js'
+import { program as Calibration } from './calibration/index.js'
+import { program as Spray } from './spray-can/index.js'
 
-export const view = (model: Model) =>
-  div(
-    {
-      class:
-        'h-screen w-screen flex flex-col justify-center items-center bg-slate-900 text-white'
-    },
-    [
-      h1({ class: 'text-5xl font-bold mb-4' }, 'Nexus Arcade (Controller)'),
-      h2(
-        { class: 'text-lg text-slate-400 mb-6' },
-        `Session Code: ${model.session}`
-      ),
-      h2(
-        { class: 'text-sm text-teal-400 mb-8' },
-        model.status === 'connected' ? 'Connected to TV' : 'Waiting for TV...'
-      ),
-      model.slot
-        ? h2(
-            { class: 'text-2xl font-semibold text-teal-300' },
-            `Assigned Slot: ${model.slot}`
-          )
-        : null
-    ]
-  )
+export const view = (model: Model, dispatch: (m: Msg) => void) => {
+  switch (model.screen) {
+    case Screen.LOBBY:
+      return Lobby.view(model.lobby, (m) =>
+        dispatch({ type: Screen.LOBBY, msg: m })
+      )
+    case Screen.MENU:
+      return Menu.view(model.menu, (m) =>
+        dispatch({ type: Screen.MENU, msg: m })
+      )
+    case Screen.CALIBRATION:
+      return Calibration.view(model.calibration, (m) =>
+        dispatch({ type: Screen.CALIBRATION, msg: m })
+      )
+    case Screen.SPRAYCAN:
+      return Spray.view(model.spray, (m) =>
+        dispatch({ type: Screen.SPRAYCAN, msg: m })
+      )
+    default:
+      return div({}, 'Loading…')
+  }
+}
