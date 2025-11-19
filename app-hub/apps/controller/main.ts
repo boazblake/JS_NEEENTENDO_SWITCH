@@ -4,6 +4,7 @@ import './main.css'
 import { program } from './program/index.js'
 import { runSocketStream } from '@/effects/network.js'
 import { registerResizeIO } from '@/effects/global.js'
+import { Motion } from '@boazblake/capacitor-motion'
 
 // 1. Open a WebSocket connection to your relay
 const ws = new WebSocket('wss://192.168.7.195:8081')
@@ -18,7 +19,8 @@ export const env = {
   ...browserEnv(), // document, window, storage, fetch
   ws, // your socket connection
   session, // current TV pairing code
-  id // unique controller ID
+  id, // unique controller ID
+  motion: Motion
 }
 
 // 4. Resolve root DOM node

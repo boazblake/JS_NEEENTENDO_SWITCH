@@ -7,8 +7,8 @@ export default defineConfig({
   server: {
     port: 5174,
     https: {
-      key: './192.168.7.195+2-key.pem',
-      cert: './192.168.7.195+2.pem'
+      key: '../../certs/192.168.7.195+2-key.pem',
+      cert: '../../certs/192.168.7.195+2.pem'
     }
   },
   build: { outDir: '../../dist/controller' },

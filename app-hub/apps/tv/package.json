@@ -1,0 +1,27 @@
+{
+  "name": "@edu-games/tv",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@edu-games/shared": "workspace:*",
+    "@capacitor/core": "^6.0.0",
+    "@boazblake/capacitor-motion": "file:../../capacitor-motion",
+    "vite": "^6.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "tailwindcss": "^4.1.17",
+    "@tailwindcss/postcss": "^4.1.17",
+    "postcss": "^8.5.6",
+    "autoprefixer": "^10.4.22"
+  },
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview",
+    "cap:sync": "cap sync",
+    "ios": "cap run ios",
+    "android": "cap run android"
+  }
+}

@@ -80,7 +80,7 @@ const handleScreenOut = (msg: ScreenOut, model: Model) => {
 }
 
 export const update = (msg: Msg, model: Model, dispatch: any) => {
-  console.log('update')
+  console.log('parent update', msg, model)
   switch (msg.type) {
     case MessageType.NETWORK_IN: {
       const { model: next, effects } = handleNetwork(
