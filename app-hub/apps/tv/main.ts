@@ -1,5 +1,5 @@
 import { IO, askDocument, browserEnv, runDomIO, renderApp } from 'algebraic-js'
-import { renderer } from '@/shared/renderer'
+import { renderer } from '@shared/renderer'
 import './main.css'
 import { program } from './program/index.js'
 import { runSocketStream } from '@/effects/network.js'

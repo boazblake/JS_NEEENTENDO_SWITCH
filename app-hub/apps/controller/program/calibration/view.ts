@@ -1,19 +1,22 @@
-import { div, h1, p, button } from '@/shared/renderer.js'
+import { div, h1, p, button, pre } from '@shared/renderer'
 import type { Dispatch } from 'algebraic-js'
 import type { Model } from './types.js'
 
 /**
- * Compute, normalize, and format numeric calibration values.
- * Returns plain numbers already rounded to fixed precision.
+ * Format vector numbers with fixed precision.
+ */
+const fmt = (v: number, n = 2) => (Number.isFinite(v) ? v.toFixed(n) : '0.00')
+
+/**
+ * Extract latest motion values safely from model.
  */
 const getLatest = (m: Model) => ({
-  alpha: Math.round(Number.isFinite(m.alpha) ? m.alpha : 0),
-  x: Math.round(Number.isFinite(m.x) ? m.x * 100 : 50),
-  y: Math.round(Number.isFinite(m.y) ? m.y * 100 : 50)
+  gravity: m.gravity ?? [0, 0, 0],
+  quaternion: m.quaternion ?? [0, 0, 0, 1]
 })
 
 export const view = (model: Model, dispatch: Dispatch) => {
-  const { alpha, x, y } = getLatest(model)
+  const { gravity, quaternion } = getLatest(model)
 
   return div(
     {
@@ -25,7 +28,7 @@ export const view = (model: Model, dispatch: Dispatch) => {
 
       p(
         { className: 'text-slate-400 mb-8' },
-        'Tilt or rotate your phone to align with the target on TV.'
+        'Tilt or rotate your phone — values update in real time.'
       ),
 
       button(
@@ -37,14 +40,30 @@ export const view = (model: Model, dispatch: Dispatch) => {
         'Enable Motion Sensors'
       ),
 
-      div({
-        className:
-          'relative w-72 h-72 border-4 border-teal-400 rounded-2xl bg-slate-900 shadow-inner'
-      }),
+      div(
+        {
+          className:
+            'relative w-72 h-72 border-4 border-teal-400 rounded-2xl bg-slate-900 shadow-inner flex flex-col items-center justify-center'
+        },
+        [
+          p(
+            { className: 'text-teal-400 font-mono text-sm' },
+            `gravity: [ ${fmt(gravity[0])}, ${fmt(gravity[1])}, ${fmt(gravity[2])} ]`
+          ),
+          p(
+            { className: 'text-emerald-400 font-mono text-sm mt-2' },
+            `quat: [ ${fmt(quaternion[0])}, ${fmt(quaternion[1])}, ${fmt(
+              quaternion[2]
+            )}, ${fmt(quaternion[3])} ]`
+          )
+        ]
+      ),
 
-      p(
-        { className: 'text-sm text-slate-500 mt-8' },
-        `α:${alpha}°  x:${x}  y:${y}`
+      pre(
+        {
+          className: 'text-xs text-slate-500 mt-6 font-mono whitespace-pre-wrap'
+        },
+        JSON.stringify({ gravity, quaternion }, null, 2)
       )
     ]
   )

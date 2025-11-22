@@ -1,4 +1,4 @@
-import { div, h1, p } from '@/shared/renderer.js'
+import { div, h1, p } from '@shared/renderer'
 export const view = (_model, _dispatch) =>
   div(
     {

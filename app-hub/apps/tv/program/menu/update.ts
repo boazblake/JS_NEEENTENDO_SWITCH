@@ -1,5 +1,5 @@
 import type { Model, Msg } from './types.js'
-import { Screen } from '@/shared/types.js'
+import { Screen } from '@shared/types'
 
 export const update = (msg: Msg, model: Model) => {
   switch (msg.type) {

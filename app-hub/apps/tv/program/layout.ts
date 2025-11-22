@@ -1,4 +1,4 @@
-import { div, button } from '@/shared/renderer.js'
+import { div, button } from '@shared/renderer'
 
 export const layout = (
   content: any,

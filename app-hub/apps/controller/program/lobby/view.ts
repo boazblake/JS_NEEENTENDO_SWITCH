@@ -1,4 +1,4 @@
-import { div, h1, p } from '@/shared/renderer.js'
+import { div, h1, p } from '@shared/renderer'
 import type { Model } from './types.js'
 
 export const view = (model: Model) =>

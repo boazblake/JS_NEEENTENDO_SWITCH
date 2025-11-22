@@ -1,5 +1,5 @@
 import { IO } from 'algebraic-js'
-import { MessageType } from '@/shared/types.js'
+import { MessageType } from '@shared/types'
 import type { Model, Msg, SprayStart, SprayPoint, SprayEnd } from './types.js'
 
 export const update = (msg: Msg, model: Model) => {

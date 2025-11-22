@@ -1,6 +1,6 @@
-import { div, canvas, button } from '@/shared/renderer.js'
-import { Screen } from '@/shared/types.js'
-import { wrapScreenIn } from '@/shared/utils.js'
+import { div, canvas, button } from '@shared/renderer'
+import { Screen } from '@shared/types'
+import { wrapScreenIn } from '@shared/utils'
 
 export const view = (model, dispatch) =>
   div(

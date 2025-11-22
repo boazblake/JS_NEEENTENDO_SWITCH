@@ -2,7 +2,7 @@ import type { Model as LobbyModel } from './lobby/types.js'
 import type { Model as MenuModel } from './menu/types.js'
 import type { Model as CalibrationModel } from './calibration/types.js'
 import type { Model as SprayModel } from './spray-can/types.js'
-import { Screen } from '@/shared/types.js'
+import { Screen } from '@shared/types'
 
 export type Model = {
   id: string

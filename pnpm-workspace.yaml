@@ -1,4 +1,0 @@
-packages:
-  - "games/*"
-  - "games/wordpond/*"
-  - "packages/*"

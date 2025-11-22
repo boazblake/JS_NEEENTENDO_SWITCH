@@ -1,7 +1,7 @@
 import { IO, type Dispatch } from 'algebraic-js'
-import { wrapScreenOut } from '@/shared/utils'
+// import { wrapScreenOut } from '@shared/utils'
 import { Motion } from '@boazblake/capacitor-motion'
-import { MessageType, Screen } from '@/shared/types.js'
+import { MessageType, Screen } from '@shared/types'
 
 const clamp = (v: number, min: number, max: number) =>
   Math.min(max, Math.max(min, v))
@@ -16,20 +16,30 @@ export const startMotion = (dispatch: Dispatch) =>
       await Motion.start({ hz: 60 })
       console.log('[startMotion] Motion started')
 
-      const sub = await Motion.addListener('motion', ({ gravity }) => {
-        const [gx, gy, gz] = gravity
-        const x = clamp((gx + 1) / 2, 0, 1)
-        const y = clamp(1 - (gy + 1) / 2, 0, 1)
+      const sub = await Motion.addListener(
+        'motion',
+        ({ quaternion, gravity }) => {
+          // const [gx, gy, gz] = gravity
+          // const x = clamp((gx + 1) / 2, 0, 1)
+          // const y = clamp(1 - (gy + 1) / 2, 0, 1)
+          //
+          // const payload = {
+          //   type: MessageType.CALIB_UPDATE,
+          //   x,
+          //   y,
+          //   gravity: [gx, gy, gz]
+          // }
 
-        const payload = {
-          type: MessageType.CALIB_UPDATE,
-          x,
-          y,
-          gravity: [gx, gy, gz]
+          dispatch({
+            type: Screen.CALIBRATION,
+            msg: {
+              type: 'MOTION_EVENT',
+              quaternion,
+              gravity
+            }
+          })
         }
-
-        dispatch(wrapScreenOut(Screen.CALIBRATION, payload))
-      })
+      )
 
       remove = sub.remove
     } catch (e) {

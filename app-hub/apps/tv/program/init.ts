@@ -1,6 +1,6 @@
 import { IO } from 'algebraic-js'
-import { sendMsg } from '@/effects/network.js'
-import { MessageType } from '@/shared/types.js'
+import { sendMsg } from '@effects/network'
+import { MessageType } from '@shared/types'
 import { init as lobbyInit } from './lobby/init.js'
 import { init as menuInit } from './menu/init.js'
 import { init as calibrationInit } from './calibration/init.js'

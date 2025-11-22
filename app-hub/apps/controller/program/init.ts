@@ -1,5 +1,5 @@
 import { IO } from 'algebraic-js'
-import { sendMsg } from '@/effects/network.js'
+import { sendMsg } from '@effects/network'
 import type { Model } from './types.js'
 
 import { init as lobbyInit } from './lobby/init.js'

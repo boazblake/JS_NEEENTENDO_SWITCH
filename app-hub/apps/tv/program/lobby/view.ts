@@ -1,5 +1,5 @@
-import { div, h1, button, ul, li, h2, p, span } from '@/shared/renderer.js'
-import { Screen, MessageType } from '@/shared/types.js'
+import { div, h1, button, ul, li, h2, p, span } from '@shared/renderer'
+import { Screen, MessageType } from '@shared/types'
 
 export const view = (model: any, dispatch: any) =>
   div(

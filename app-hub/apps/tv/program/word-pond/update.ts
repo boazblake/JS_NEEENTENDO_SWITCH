@@ -1,6 +1,6 @@
 import { IO, State } from 'algebraic-js'
 import type { Model, Msg, Player } from './types.js'
-import { sendIO } from '@/effects/network.ts'
+import { sendIO } from '@effects/network'
 
 // `State` holds the entire `players` record
 // the computation returns the assigned slot

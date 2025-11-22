@@ -1,0 +1,40 @@
+PODS:
+  - BoazblakeCapacitorMotion (0.1.0):
+    - Capacitor
+  - Capacitor (7.4.4):
+    - CapacitorCordova
+  - CapacitorCordova (7.4.4)
+  - CapacitorHaptics (6.0.2):
+    - Capacitor
+  - CapacitorNetwork (6.0.3):
+    - Capacitor
+
+DEPENDENCIES:
+  - BoazblakeCapacitorMotion (from `../../../../../../capacitor-motion`)
+  - "Capacitor (from `../../node_modules/@capacitor/ios`)"
+  - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
+  - "CapacitorHaptics (from `../../../../node_modules/@capacitor/haptics`)"
+  - "CapacitorNetwork (from `../../../../node_modules/@capacitor/network`)"
+
+EXTERNAL SOURCES:
+  BoazblakeCapacitorMotion:
+    :path: "../../../../../../capacitor-motion"
+  Capacitor:
+    :path: "../../node_modules/@capacitor/ios"
+  CapacitorCordova:
+    :path: "../../node_modules/@capacitor/ios"
+  CapacitorHaptics:
+    :path: "../../../../node_modules/@capacitor/haptics"
+  CapacitorNetwork:
+    :path: "../../../../node_modules/@capacitor/network"
+
+SPEC CHECKSUMS:
+  BoazblakeCapacitorMotion: 848e1e7a0686e3aba4ae0ef67b6dd6c48d99a162
+  Capacitor: 09d9ff8e9618e8c4b3cab2bbee34a17215dd2fef
+  CapacitorCordova: bf648a636f3c153f652d312ae145fb508b6ffced
+  CapacitorHaptics: b53409aaca1203f79c6d0eb3ed5de40556339518
+  CapacitorNetwork: da96b5fff8d05b67f4658503aabb22f65bda2c0f
+
+PODFILE CHECKSUM: 16baa033c7383e0cb27c146eb4d5be1daa270955
+
+COCOAPODS: 1.16.2

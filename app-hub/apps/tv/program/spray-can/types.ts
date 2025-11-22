@@ -1,4 +1,4 @@
-import { MessageType } from '@/shared/types.js'
+import { MessageType } from '@shared/types'
 
 export type Model = {
   ctx: CanvasRenderingContext2D | null

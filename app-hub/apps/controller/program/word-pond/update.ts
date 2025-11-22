@@ -1,6 +1,6 @@
 import { IO } from 'algebraic-js'
 import type { Model, Msg } from './types.js'
-import { sendIO } from '@/effects/network'
+import { sendIO } from '@effects/network'
 
 export const update = (
   msg: Msg,

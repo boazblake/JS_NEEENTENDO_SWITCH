@@ -1,6 +1,6 @@
-import { div } from '@/shared/renderer.js'
+import { div } from '@shared/renderer'
 import type { Model, Msg } from './types.js'
-import { Screen } from '@/shared/types.js'
+import { Screen } from '@shared/types'
 import { program as Lobby } from './lobby/index.js'
 import { program as Menu } from './menu/index.js'
 import { program as Calibration } from './calibration/index.js'

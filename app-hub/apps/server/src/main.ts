@@ -8,7 +8,7 @@ import {
   NetworkIn,
   RegisterTV,
   RegisterPlayer
-} from '@shared/types.js'
+} from '../../../shared/src/types.ts'
 
 type Session = {
   tv: WebSocket
@@ -20,8 +20,8 @@ type Session = {
 // ---------------------------------------------------------------------------
 
 const certDir = path.resolve(process.cwd(), '../../certs')
-const key = readFileSync(path.join(certDir, '192.168.7.195+2-key.pem'))
-const cert = readFileSync(path.join(certDir, '192.168.7.195+2.pem'))
+const key = readFileSync(path.join(certDir, '/multi-ip-key.pem'))
+const cert = readFileSync(path.join(certDir, '/multi-ip.pem'))
 
 const server = https.createServer({ key, cert })
 const wss = new WebSocketServer({ server })

@@ -1,12 +1,14 @@
 import { IO, askDocument, browserEnv, runDomIO, renderApp } from 'algebraic-js'
-import { renderer } from '@/shared/renderer'
+import { renderer } from '@shared/renderer'
 import './main.css'
 import { program } from './program/index.js'
-import { runSocketStream } from '@/effects/network.js'
-import { registerResizeIO } from '@/effects/global.js'
+import { runSocketStream } from '@effects/network'
+import { registerResizeIO } from '@effects/global'
 import { Motion } from '@boazblake/capacitor-motion'
-
+// import { Capacitor } from '@capacitor/core'
+// Capacitor.setLogLevel('warn')
 // 1. Open a WebSocket connection to your relay
+// const ws = new WebSocket('wss://192.168.7.195:8081')
 const ws = new WebSocket('wss://192.168.7.195:8081')
 
 // 2. Collect controller identity and TV session

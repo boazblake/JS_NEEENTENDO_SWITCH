@@ -1,5 +1,5 @@
 import { IO } from 'algebraic-js'
-import { sendMsg } from '@/effects/network.js'
+import { sendMsg } from '@effects/network'
 import {
   MessageType,
   RegisterPlayer,
@@ -8,8 +8,8 @@ import {
   NetworkIn,
   ScreenOut,
   Screen
-} from '@/shared/types.js'
-import { wrapScreenIn } from '@/shared/utils.js'
+} from '@shared/types'
+import { wrapScreenIn } from '@shared/utils'
 
 import { program as Lobby } from './lobby/index.js'
 import { program as Menu } from './menu/index.js'
@@ -79,7 +79,7 @@ const routeSubProgram = (msg: Msg, model: Model, dispatch: any) => {
       const r = Calibration.update(msg, model.calibration, (m: any) =>
         dispatch({ type: Screen.CALIBRATION, msg: m })
       )
-      return { model: { ...model, calibration: r.model }, effects: r.effects }
+      // return { model: { ...model, calibration: r.model }, effects: r.effects }
     }
 
     case Screen.SPRAYCAN: {

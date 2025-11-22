@@ -1,7 +1,7 @@
-import { div, h2, p, button } from '@/renderer.js'
+import { div, h2, p, button } from '@shared/renderer'
 import type { Model, Msg } from './types.js'
 import { runDomIO, browserEnv } from 'algebraic-js'
-import { getPlayerId } from '@/effects/identity.js'
+import { getPlayerId } from '@effects/identity'
 
 export const view = (model: Model, dispatch: (m: Msg) => void) =>
   div({ class: 'controller-view' }, [

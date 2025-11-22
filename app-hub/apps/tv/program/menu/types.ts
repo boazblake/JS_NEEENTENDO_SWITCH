@@ -1,4 +1,4 @@
-import { Screen } from '@/shared/types.js'
+import { Screen } from '@shared/types'
 
 export type Model = {
   /** Which screen the menu is currently pointing to */

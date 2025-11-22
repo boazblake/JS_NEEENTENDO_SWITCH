@@ -1,11 +1,11 @@
 import type { Dispatch } from 'algebraic-js'
 import type { Model, Msg } from './types.js'
-import { sendMsg } from '@/effects/network.js'
+import { sendMsg } from '@effects/network'
 import { program as Lobby } from './lobby/index.js'
 import { program as Menu } from './menu/index.js'
 import { program as Calibration } from './calibration/index.js'
 import { program as Spray } from './spray-can/index.js'
-import { MessageType, ScreenOut, Screen, NetworkIn } from '@/shared/types.js'
+import { MessageType, ScreenOut, Screen, NetworkIn } from '@shared/types'
 
 export const routeSubProgram = (msg: Msg, model: Model, dispatch: Dispatch) => {
   switch (msg.type) {
@@ -80,7 +80,6 @@ const handleScreenOut = (msg: ScreenOut, model: Model) => {
 }
 
 export const update = (msg: Msg, model: Model, dispatch: any) => {
-  console.log('parent update', msg, model)
   switch (msg.type) {
     case MessageType.NETWORK_IN: {
       const { model: next, effects } = handleNetwork(

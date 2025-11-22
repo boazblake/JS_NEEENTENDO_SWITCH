@@ -21,6 +21,8 @@
             git
             openssl
             python3
+            ruby
+            cocoapods
           ];
 
           shellHook = ''

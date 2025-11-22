@@ -1,4 +1,4 @@
-import { sendMsg } from '@/effects/network.js'
+import { sendMsg } from '@effects/network'
 import type { Model, Msg } from './types.js'
 
 export const update = (

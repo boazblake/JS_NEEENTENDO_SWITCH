@@ -1,4 +1,4 @@
-import { div, canvas, h1 } from '@/shared/renderer.js'
+import { div, canvas, h1 } from '@shared/renderer'
 
 export const view = () =>
   div(
