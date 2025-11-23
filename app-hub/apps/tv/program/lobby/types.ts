@@ -1,7 +1,6 @@
 import { Screen MessageType} from '@shared/types'
 
 export type Model = {
-  /** Which screen this lobby can navigate to */
   screen: Screen.MENU | Screen.SPRAYCAN | Screen.WORDPOND
 }
 

@@ -8,9 +8,10 @@ import { program as Spray } from './spray-can/index.js'
 import { MessageType, ScreenOut, Screen, NetworkIn } from '@shared/types'
 
 export const routeSubProgram = (msg: Msg, model: Model, dispatch: Dispatch) => {
-  switch (msg.type) {
+  console.log('wtf here', msg)
+  switch (msg.screen) {
     case Screen.LOBBY: {
-      const r = Lobby.update(msg.msg, model.lobby, (m) =>
+      const r = Lobby.update(msg.payload, model.lobby, (m) =>
         dispatch({ type: Screen.LOBBY, msg: m })
       )
       return { model: { ...model, lobby: r.model }, effects: r.effects }
@@ -45,7 +46,11 @@ export const routeSubProgram = (msg: Msg, model: Model, dispatch: Dispatch) => {
  * Map an incoming network payload to a controller state change
  * or to a local sub-program message.
  */
-export const handleNetwork = (payload: any, model: Model) => {
+export const handleNetwork = (
+  payload: any,
+  model: Model,
+  dispatch: Dispatch
+) => {
   switch (payload.type) {
     case 'ACK_PLAYER':
       return { model: { ...model, status: 'connected' }, effects: [] }
@@ -66,8 +71,8 @@ export const handleNetwork = (payload: any, model: Model) => {
         ]
       }
 
-    default:
-      return { model, effects: [] }
+    case MessageType.SCREEN_IN:
+      return routeSubProgram(payload, model, dispatch)
   }
 }
 

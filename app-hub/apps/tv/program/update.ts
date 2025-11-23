@@ -79,7 +79,8 @@ const routeSubProgram = (msg: Msg, model: Model, dispatch: any) => {
       const r = Calibration.update(msg, model.calibration, (m: any) =>
         dispatch({ type: Screen.CALIBRATION, msg: m })
       )
-      // return { model: { ...model, calibration: r.model }, effects: r.effects }
+      console.log(r)
+      return { model: { ...model, calibration: r.model }, effects: r.effects }
     }
 
     case Screen.SPRAYCAN: {

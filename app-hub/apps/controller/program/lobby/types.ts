@@ -1,6 +1,6 @@
 export type Model = {
-  session: string
-  connected: boolean
+  availableTvs: string[]
+  connectedTv: string
 }
 
 export type Msg =

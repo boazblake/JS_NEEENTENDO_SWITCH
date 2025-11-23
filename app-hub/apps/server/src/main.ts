@@ -7,8 +7,10 @@ import {
   BaseMessage,
   NetworkIn,
   RegisterTV,
-  RegisterPlayer
+  RegisterPlayer,
+  Screen
 } from '../../../shared/src/types.ts'
+import { wrapScreenIn } from '../../../shared/src/utils.ts'
 
 type Session = {
   tv: WebSocket
@@ -46,6 +48,22 @@ const wrap = (payload: BaseMessage): NetworkIn => ({
   payload
 })
 
+const broadcastTVList = () => {
+  const tvList = Array.from(sessions.keys())
+  const payload = wrapScreenIn(Screen.LOBBY, {
+    type: MessageType.TV_LIST,
+    msg: {
+      list: tvList
+    }
+  })
+
+  for (const client of wss.clients) {
+    if (client.readyState === WebSocket.OPEN) {
+      safeSend(client, wrap(payload as any))
+    }
+  }
+}
+
 // ---------------------------------------------------------------------------
 //  Connection handling
 // ---------------------------------------------------------------------------
@@ -61,8 +79,11 @@ wss.on('connection', (socket) => {
       console.warn('[relay] invalid JSON')
       return
     }
-
     const { type, session } = msg
+    if (!session)
+      // inform all controllers of updated list
+      return broadcastTVList()
+
     if (!type) return
 
     // --- 1. TV registers ----------------------------------------
@@ -75,8 +96,10 @@ wss.on('connection', (socket) => {
       sessions.set(payload.session, { tv: socket, controllers: new Set() })
       console.log(`[relay] TV registered ${payload.session}`)
 
-      safeSend(socket, { type: MessageType.APP_SELECTED, session: payload.session })
-      return
+      safeSend(socket, {
+        type: MessageType.APP_SELECTED,
+        session: payload.session
+      })
     }
 
     // --- 2. Controller joins ------------------------------------

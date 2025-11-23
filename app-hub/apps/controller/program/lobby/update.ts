@@ -1,13 +1,19 @@
 import type { Model, Msg } from './types.js'
+import type { Dispatch } from 'algrebaic-js'
+import { sendMsg } from '@effects/network'
+import { MessageType, Screen } from '@shared/types'
+import { wrapScreenOut } from '@shared/utils'
 
-export const update = (msg: Msg, model: Model, _dispatch: any) => {
+export const update = (msg: Msg, model: Model, dispatch: Disaptch) => {
   switch (msg.type) {
-    case 'NETWORK_IN': {
-      const p = msg.payload
-      if (p.type === 'ACK_PLAYER') {
-        return { model: { ...model, connected: true }, effects: [] }
+    case MessageType.CONNECT_TO_TV:
+      return {
+        model,
+        effects: [sendMsg(MessageType.SCREEN_OUT, msg)]
       }
-      return { model, effects: [] }
+
+    case MessageType.TV_LIST: {
+      return { model: { ...model, availableTvs: msg.msg.list }, effects: [] }
     }
     default:
       return { model, effects: [] }

@@ -13,14 +13,14 @@ const ws = new WebSocket('wss://192.168.7.195:8081')
 
 // 2. Collect controller identity and TV session
 //    (later this could come from a login or storage API)
-const session = (prompt('Enter session code from TV') || '').toUpperCase()
+// const session = (prompt('Enter session code from TV') || '').toUpperCase()
 const id = Math.random().toString(36).substring(2, 10)
 
 // 3. Build the full environment object
 export const env = {
   ...browserEnv(), // document, window, storage, fetch
   ws, // your socket connection
-  session, // current TV pairing code
+  session: '', // current TV pairing code
   id, // unique controller ID
   motion: Motion
 }

@@ -36,6 +36,7 @@ export enum MessageType {
 
   // Session and registration
   REGISTER_TV = 'REGISTER_TV',
+  TV_LIST = 'TV_LIST',
   REGISTER_PLAYER = 'REGISTER_PLAYER',
   ACK_PLAYER = 'ACK_PLAYER',
 
