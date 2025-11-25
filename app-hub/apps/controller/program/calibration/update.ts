@@ -1,9 +1,5 @@
 import { IO, Dispatch, runDomIO } from 'algebraic-js'
-import {
-  startMotion
-  // requestPermissionIO,
-  // registerMotionListenerIO
-} from './effects.js'
+import { startMotion } from './effects.js'
 import { sendMsg } from '@effects/network'
 import { MessageType, Screen } from '@shared/types'
 import { wrapScreenOut } from '@shared/utils'
@@ -16,16 +12,6 @@ export const update = (msg: Msg, model: Model, dispatch: Dispatch) => {
     case 'ENABLE_MOTION':
       return { model, effects: [startMotion(dispatch)] }
 
-    // case 'PERMISSION_GRANTED':
-    //   return {
-    //     model,
-    //     effects: [runDomIO(registerMotionListenerIO(dispatch), env)]
-    //   }
-    // // return { model, effects: [registerMotionListenerIO(dispatch)] }
-    //
-    // case 'PERMISSION_DENIED':
-    //   return { model, effects: [] }
-    //
     case 'MOTION_EVENT': {
       const { quaternion, gravity } = msg
       const next = { ...model, quaternion, gravity }

@@ -1,24 +1,26 @@
-import { div, canvas, h1 } from '@shared/renderer'
+// tv/spray-can/view.ts
+import { div, span } from '@shared/renderer'
 
-export const view = () =>
+export const view = (model) =>
   div(
     {
       className:
-        'relative w-screen h-screen bg-slate-900 overflow-hidden text-white'
+        'fixed inset-0 overflow-visible pointer-events-none bg-transparent'
     },
-    [
-      canvas({
-        id: 'sprayCanvas',
-        width: 1920,
-        height: 1080,
-        className: 'absolute top-0 left-0 w-full h-full bg-slate-900'
-      }),
-      h1(
-        {
-          className:
-            'absolute top-6 left-8 text-3xl font-bold text-pink-400 drop-shadow'
-        },
-        'Spray-Can'
-      )
-    ]
+    console.log('view', model),
+    model.spray.dots.map((d) =>
+      span({
+        className: 'absolute rounded-full pointer-events-none',
+        style: `
+          left:${d.x}px;
+          top:${d.y}px;
+          width:${d.size}px;
+          height:${d.size}px;
+          background:${d.color};
+          opacity:${d.opacity};
+          filter: blur(${d.size / 2}px);
+          z-index:999999;
+        `
+      })
+    )
   )

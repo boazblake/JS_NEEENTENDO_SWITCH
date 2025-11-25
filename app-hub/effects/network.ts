@@ -1,5 +1,5 @@
 import { Stream, Reader, IO, type DomEnv, type Dispatch } from 'algebraic-js'
-import { MessageType, NetworkMessage } from '@/shared/types.js'
+import { MessageType, NetworkMessage, type Payload } from '@/shared/types.js'
 
 /**
  * Pure Reader<DomEnv, IO> for sending a message over WebSocket.
@@ -7,11 +7,11 @@ import { MessageType, NetworkMessage } from '@/shared/types.js'
  * with a concrete environment containing `ws`.
  */
 
-export const sendMsg = (msg: NetworkMessage) =>
+export const sendMsg = (payload: Payload) =>
   Reader((env) =>
     IO(() => {
       const ws = env.ws
-      const data = JSON.stringify({ ...msg, time: Date.now() })
+      const data = JSON.stringify(payload)
       if (ws.readyState === WebSocket.OPEN) ws.send(data)
       else {
         const onOpen = () => {

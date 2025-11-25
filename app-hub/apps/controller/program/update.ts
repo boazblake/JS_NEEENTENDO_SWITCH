@@ -1,104 +1,117 @@
 import type { Dispatch } from 'algebraic-js'
-import type { Model, Msg } from './types.js'
+import type { Model } from './types'
 import { sendMsg } from '@effects/network'
-import { program as Lobby } from './lobby/index.js'
-import { program as Menu } from './menu/index.js'
-import { program as Calibration } from './calibration/index.js'
-import { program as Spray } from './spray-can/index.js'
-import { MessageType, ScreenOut, Screen, NetworkIn } from '@shared/types'
+import { createMsg, withIds } from '@shared/utils'
+import { program as Lobby } from './lobby/index'
+import { program as Menu } from './menu/index'
+import { program as Calibration } from './calibration/index'
+import { program as Spray } from './spray-can/index'
+import { startAutoCalibration } from './effects'
+import { MessageType, Screen, type Payload } from '@shared/types'
 
-export const routeSubProgram = (msg: Msg, model: Model, dispatch: Dispatch) => {
-  console.log('wtf here', msg)
-  switch (msg.screen) {
+const routeSubProgram = (msg: Payload, model: Model, dispatch: Dispatch) => {
+  switch (msg.msg.screen) {
     case Screen.LOBBY: {
-      const r = Lobby.update(msg.payload, model.lobby, (m) =>
-        dispatch({ type: Screen.LOBBY, msg: m })
-      )
+      const r = Lobby.update(msg, model.lobby, dispatch)
       return { model: { ...model, lobby: r.model }, effects: r.effects }
     }
-
     case Screen.MENU: {
-      const r = Menu.update(msg.msg, model.menu, (m) =>
-        dispatch({ type: Screen.MENU, msg: m })
-      )
+      const r = Menu.update(msg, model.menu, dispatch)
       return { model: { ...model, menu: r.model }, effects: r.effects }
     }
-
     case Screen.CALIBRATION: {
-      const r = Calibration.update(msg.msg, model.calibration, (m) =>
-        dispatch(m)
-      )
+      const r = Calibration.update(msg, model.calibration, dispatch)
       return { model: { ...model, calibration: r.model }, effects: r.effects }
     }
-
     case Screen.SPRAYCAN: {
-      const r = Spray.update(msg.msg, model.spray, (m) =>
-        dispatch({ type: Screen.SPRAYCAN, msg: m })
-      )
+      const r = Spray.update(msg, model.spray, dispatch)
       return { model: { ...model, spray: r.model }, effects: r.effects }
     }
-
     default:
       return { model, effects: [] }
   }
 }
-/**
- * Map an incoming network payload to a controller state change
- * or to a local sub-program message.
- */
-export const handleNetwork = (
-  payload: any,
-  model: Model,
-  dispatch: Dispatch
-) => {
+
+export const update = (payload: Payload, model: Model, dispatch: Dispatch) => {
   switch (payload.type) {
-    case 'ACK_PLAYER':
-      return { model: { ...model, status: 'connected' }, effects: [] }
-
-    case 'APP_SELECTED':
-      return { model: { ...model, screen: payload.app }, effects: [] }
-
-    case 'CALIB_UPDATE':
-      // if the controller needs to reflect other players’ calibration
-      return { model, effects: [] }
-
-    case 'PING':
-      // Example of replying back
+    // -----------------------------------------------------------------------
+    //  Relay confirms registration
+    // -----------------------------------------------------------------------
+    case MessageType.ACK_PLAYER: {
+      const { id, session } = model
+      const effects = [startAutoCalibration(dispatch, id, session)]
       return {
-        model,
-        effects: [
-          sendMsg({ type: 'PONG', id: model.id, session: model.session })
-        ]
+        model: { ...model, status: 'connected', screen: Screen.MENU },
+        effects
       }
-
-    case MessageType.SCREEN_IN:
-      return routeSubProgram(payload, model, dispatch)
-  }
-}
-
-const handleScreenOut = (msg: ScreenOut, model: Model) => {
-  const outMsg = { ...msg, id: model.id, session: model.session }
-  return {
-    model,
-    effects: [sendMsg(outMsg)]
-  }
-}
-
-export const update = (msg: Msg, model: Model, dispatch: any) => {
-  switch (msg.type) {
-    case MessageType.NETWORK_IN: {
-      const { model: next, effects } = handleNetwork(
-        (msg as NetworkIn).payload,
-        model,
-        dispatch
-      )
-      return { model: next, effects }
     }
 
-    case MessageType.SCREEN_OUT:
-      return handleScreenOut(msg as ScreenOut, model)
+    // -----------------------------------------------------------------------
+    //  Relay broadcasts available TVs
+    // -----------------------------------------------------------------------
+    case MessageType.TV_LIST:
+      return routeSubProgram(payload, model, dispatch)
 
-    default:
-      return routeSubProgram(msg, model, dispatch)
+    // -----------------------------------------------------------------------
+    //  Controller selects a TV
+    // -----------------------------------------------------------------------
+    case 'SELECT_TV': {
+      const tvId = payload.msg.tvId
+      const next = { ...model, session: tvId, status: 'connecting' }
+      return {
+        model: next,
+        effects: [
+          sendMsg({
+            type: MessageType.REGISTER_PLAYER,
+            msg: { session: tvId, id: model.id, name: model.name },
+            t: Date.now()
+          })
+        ]
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    //  Hover feedback from TV
+    // -----------------------------------------------------------------------
+    case MessageType.POINTER_HOVER: {
+      const hoverId = payload.msg.id || null
+      return { model: { ...model, hoverId }, effects: [] }
+    }
+
+    case 'APP_SELECTED':
+      return { model: { ...model, screen: payload.msg.app }, effects: [] }
+
+    case MessageType.SPRAY_START:
+    case MessageType.SPRAY_POINT:
+    case MessageType.SPRAY_END: {
+      const graffiti = {
+        type: payload.type,
+        msg: {
+          ...payload.msg,
+          session: model.session,
+          id: model.id
+        },
+        t: Date.now()
+      }
+
+      // 1. send to the relay
+      const sendFx = sendMsg(graffiti)
+
+      // 2. update local spray child model
+      const r = Spray.update(payload, model.spray, dispatch)
+
+      return {
+        model: { ...model, spray: r.model },
+        effects: [sendFx, ...r.effects]
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    //  Fallback: route by screen key
+    // -----------------------------------------------------------------------
+    default: {
+      if (payload?.msg?.screen) return routeSubProgram(payload, model, dispatch)
+      return { model, effects: [] }
+    }
   }
 }

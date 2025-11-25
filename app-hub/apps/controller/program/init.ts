@@ -28,14 +28,7 @@ export const init = IO(() => {
     spray
   }
 
-  const effects = [
-    sendMsg({
-      type: 'REGISTER_PLAYER',
-      id,
-      name,
-      session
-    })
-  ]
+  const effects = []
 
   return { model, effects }
 })

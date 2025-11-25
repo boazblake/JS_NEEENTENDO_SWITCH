@@ -1,8 +1,9 @@
 import { Screen } from '@shared/types'
 
 export type Model = {
-  /** Which screen the menu is currently pointing to */
   screen: Screen.MENU | Screen.CALIBRATION | Screen.SPRAYCAN | Screen.LOBBY
+  pointer: { x: number; y: number }
+  hovered?: number
 }
 
 export type Msg =

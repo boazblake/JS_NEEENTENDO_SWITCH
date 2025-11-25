@@ -1,20 +1,23 @@
-import type { Model, Msg } from './types.js'
-import type { Dispatch } from 'algrebaic-js'
-import { sendMsg } from '@effects/network'
-import { MessageType, Screen } from '@shared/types'
-import { wrapScreenOut } from '@shared/utils'
+import type { Model } from './types.js'
+import type { Dispatch } from 'algebraic-js'
+import type { Payload } from '@shared/types'
+import { MessageType } from '@shared/types'
 
-export const update = (msg: Msg, model: Model, dispatch: Disaptch) => {
+export const update = (msg: Payload, model: Model, dispatch: Dispatch) => {
   switch (msg.type) {
-    case MessageType.CONNECT_TO_TV:
-      return {
-        model,
-        effects: [sendMsg(MessageType.SCREEN_OUT, msg)]
-      }
-
     case MessageType.TV_LIST: {
-      return { model: { ...model, availableTvs: msg.msg.list }, effects: [] }
+      const next = { ...model, availableTvs: msg.msg.list ?? [] }
+      return { model: next, effects: [] }
     }
+
+    case 'SELECT_TV': {
+      const tvId = msg.msg.tvId
+      const next = { ...model, connectedTv: tvId }
+      // Pass upward so parent can register and set session
+      dispatch(msg)
+      return { model: next, effects: [] }
+    }
+
     default:
       return { model, effects: [] }
   }

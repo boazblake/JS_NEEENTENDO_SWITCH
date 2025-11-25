@@ -17,7 +17,8 @@ export const init = IO(() => {
 
   const model: Model = {
     session,
-    players: {},
+    pointer: { x: 0, y: 0, hoverId: '', actions: [] },
+    players: [],
     status: 'idle',
     screen: 'lobby',
     lobby,
@@ -28,6 +29,11 @@ export const init = IO(() => {
 
   return {
     model,
-    effects: [sendMsg({ type: MessageType.REGISTER_TV, session })]
+    effects: [
+      sendMsg({
+        type: MessageType.REGISTER_TV,
+        msg: { session }
+      })
+    ]
   }
 })

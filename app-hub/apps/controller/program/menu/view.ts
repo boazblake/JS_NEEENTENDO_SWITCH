@@ -1,5 +1,5 @@
 import { div, h1, p } from '@shared/renderer'
-export const view = (_model, _dispatch) =>
+export const view = (model, dispatch) =>
   div(
     {
       className:
@@ -7,6 +7,7 @@ export const view = (_model, _dispatch) =>
     },
     [
       h1({ className: 'text-5xl font-extrabold mb-6' }, 'Connected to TV'),
-      p({ className: 'text-lg text-slate-400' }, 'Waiting for game selection…')
+      p({ className: 'text-lg text-slate-400' }, 'Waiting for game selection…'),
+      console.log('app???', model)
     ]
   )

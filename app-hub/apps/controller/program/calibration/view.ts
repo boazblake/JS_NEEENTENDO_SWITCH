@@ -17,7 +17,7 @@ const getLatest = (m: Model) => ({
 
 export const view = (model: Model, dispatch: Dispatch) => {
   const { gravity, quaternion } = getLatest(model)
-
+  console.log(model)
   return div(
     {
       className:

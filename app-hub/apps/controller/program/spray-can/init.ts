@@ -1,2 +1,7 @@
 import { IO } from 'algebraic-js'
-export const init = IO(() => ({ model: {}, effects: [] }))
+import type { Model } from './types'
+
+export const init = IO(() => ({
+  model: { color: 'teal', spraying: false } as Model,
+  effects: []
+}))

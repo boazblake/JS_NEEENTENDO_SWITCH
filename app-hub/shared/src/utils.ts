@@ -1,5 +1,25 @@
-import { MessageType, Screen, ScreenIn, ScreenOut } from './types.js'
+import {
+  MessageType,
+  Screen,
+  ScreenIn,
+  ScreenOut,
+  type Payload
+} from './types.js'
 
+export const createMsg = (
+  type: MessageType | string,
+  msg: { screen?: Screen; [k: string]: any },
+  t = Date.now()
+): Payload => ({ type, msg, t })
+
+export const withIds = (
+  p: Payload,
+  id?: string,
+  session?: string
+): Payload => ({
+  ...p,
+  msg: { ...p.msg, id, session }
+})
 export const wrapScreenIn = (screen: Screen, payload: any): ScreenIn => ({
   type: MessageType.SCREEN_IN,
   screen,
