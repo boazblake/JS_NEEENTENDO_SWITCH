@@ -191,11 +191,11 @@ wss.on('connection', (socket) => {
 
     // TV → Controllers
     if (socket === s.tv) {
-      console.warn(payload)
       for (const c of s.controllers) safeSend(c, payload)
       return
     }
 
+    payload.type !== 'CALIB_UPDATE' && console.warn(payload)
     // Controller → TV
     safeSend(s.tv, payload)
   })

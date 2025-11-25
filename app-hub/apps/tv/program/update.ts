@@ -154,13 +154,14 @@ export const update = (payload: Payload, model: Model, dispatch: Dispatch) => {
         ]
       }
     }
+
     case MessageType.SPRAY_START:
     case MessageType.SPRAY_POINT:
     case MessageType.SPRAY_END: {
       // If this message is for the spray-can screen, forward to that sub-program
       if (payload.msg.screen === Screen.SPRAYCAN) {
-        const r = Spray.update(payload, model, dispatch)
-        return { model: { ...model, spray: r.model }, effects: r.effects }
+        const nextSpray = Spray.update(payload, model, dispatch)
+        return { model: { ...model, spray: nextSpray }, effects: [] }
       }
 
       // Otherwise ignore or handle globally

@@ -75,6 +75,7 @@ export const update = (payload: Payload, model: Model, dispatch: Dispatch) => {
     // -----------------------------------------------------------------------
     case MessageType.POINTER_HOVER: {
       const hoverId = payload.msg.id || null
+      console.log('hover', hoverId)
       return { model: { ...model, hoverId }, effects: [] }
     }
 

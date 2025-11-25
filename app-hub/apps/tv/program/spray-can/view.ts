@@ -7,7 +7,6 @@ export const view = (model) =>
       className:
         'fixed inset-0 overflow-visible pointer-events-none bg-transparent'
     },
-    console.log('view', model),
     model.spray.dots.map((d) =>
       span({
         className: 'absolute rounded-full pointer-events-none',
