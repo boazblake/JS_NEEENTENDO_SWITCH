@@ -13,7 +13,7 @@ const COLORS = [
 ]
 
 export const view = (model, dispatch) => {
-  const current = model.color ?? 'teal'
+  const current = model.spray.color ?? 'teal'
   const getColor = (c) => COLORS.find((c) => c.color === current)
 
   return div(
@@ -50,7 +50,15 @@ export const view = (model, dispatch) => {
       button(
         {
           className:
-            'mt-4 px-10 py-5 text-xl font-semibold rounded-full bg-gradient-to-r from-teal-500 to-emerald-600 shadow-lg active:scale-95 transition-transform',
+            'mt-4 px-10 py-5 text-xl font-semibold rounded-full bg-gradient-to-r ' +
+            'from-teal-500 to-emerald-600 shadow-lg active:scale-95 transition-transform ' +
+            'select-none touch-none',
+          style: `
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    `,
           ontouchstart: () =>
             dispatch(MessageType.SPRAY_POINT, { active: true }),
           ontouchend: () =>

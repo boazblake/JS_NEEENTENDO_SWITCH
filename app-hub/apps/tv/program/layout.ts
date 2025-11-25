@@ -23,11 +23,12 @@ export const layout = (
           className:
             'relative w-full h-full bg-gradient-to-b from-slate-900 to-slate-800 overflow-hidden'
         },
-        [
-          div({
-            className:
-              'fixed w-6 h-6 rounded-full pointer-events-none shadow-lg border-2 border-white',
-            style: `
+        Object.keys(model.players).length
+          ? [
+              div({
+                className:
+                  'fixed w-6 h-6 rounded-full pointer-events-none shadow-lg border-2 border-white',
+                style: `
     left: 0;
     top: 0;
     transform: translate(${x}px, ${y}px);
@@ -38,8 +39,20 @@ export const layout = (
     z-index: 999999;
     will-change: transform;
   `
-          })
-        ]
+              }),
+              showBack
+                ? button(
+                    {
+                      className:
+                        'absolute bottom-8 left-8 px-6 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-300 font-semibold shadow-md',
+                      onclick: () =>
+                        dispatch({ type: 'NAVIGATE', msg: { to: 'menu' } })
+                    },
+                    '← Back'
+                  )
+                : null
+            ]
+          : null
       ),
       // main content
       div(
@@ -47,19 +60,9 @@ export const layout = (
           className: 'flex-1 flex flex-col items-center justify-center w-full'
         },
         content
-      ),
+      )
 
       // conditional back button
-      showBack
-        ? button(
-            {
-              className:
-                'absolute bottom-8 left-8 px-6 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-300 font-semibold shadow-md',
-              onclick: () => dispatch({ type: 'NAVIGATE', msg: { to: 'menu' } })
-            },
-            '← Back'
-          )
-        : null
     ]
   )
 }

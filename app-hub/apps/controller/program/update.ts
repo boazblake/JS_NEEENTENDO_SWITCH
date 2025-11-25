@@ -79,8 +79,16 @@ export const update = (payload: Payload, model: Model, dispatch: Dispatch) => {
       return { model: { ...model, hoverId }, effects: [] }
     }
 
-    case 'APP_SELECTED':
-      return { model: { ...model, screen: payload.msg.app }, effects: [] }
+    case MessageType.APP_SELECTED:
+      return {
+        model: { ...model, screen: payload.msg.app },
+        effects: [
+          sendMsg({
+            type: MessageType.NAVIGATE,
+            msg: { session: model.session, to: payload.msg.app }
+          })
+        ]
+      }
 
     case MessageType.SPRAY_START:
     case MessageType.SPRAY_POINT:
@@ -100,7 +108,7 @@ export const update = (payload: Payload, model: Model, dispatch: Dispatch) => {
 
       // 2. update local spray child model
       const r = Spray.update(payload, model.spray, dispatch)
-
+      console.log(r.model)
       return {
         model: { ...model, spray: r.model },
         effects: [sendFx, ...r.effects]

@@ -189,14 +189,17 @@ wss.on('connection', (socket) => {
     const s = sessions.get(session)
     if (!s) return
 
+    if (payload.type !== 'CALIB_UPDATE') {
+      console.log(payload)
+    }
     // TV → Controllers
     if (socket === s.tv) {
       for (const c of s.controllers) safeSend(c, payload)
       return
     }
 
-    payload.type !== 'CALIB_UPDATE' && console.warn(payload)
     // Controller → TV
+
     safeSend(s.tv, payload)
   })
 

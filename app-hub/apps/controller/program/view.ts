@@ -19,13 +19,11 @@ export const view = (model: Model, dispatch: (p: Payload) => void) => {
         dispatch(createMsg(type, { ...data, screen: Screen.MENU }))
       )
     case Screen.CALIBRATION:
-      return Calibration.view(
-        model.calibration,
-        (type: string, data: any = {}) =>
-          dispatch(createMsg(type, { ...data, screen: Screen.CALIBRATION }))
+      return Calibration.view(model, (type: string, data: any = {}) =>
+        dispatch(createMsg(type, { ...data, screen: Screen.CALIBRATION }))
       )
     case Screen.SPRAYCAN:
-      return Spray.view(model.spray, (type: string, data: any = {}) =>
+      return Spray.view(model, (type: string, data: any = {}) =>
         dispatch(createMsg(type, { ...data, screen: Screen.SPRAYCAN }))
       )
     default:

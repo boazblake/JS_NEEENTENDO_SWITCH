@@ -140,10 +140,6 @@ export const update = (payload: Payload, model: Model, dispatch: Dispatch) => {
     // -----------------------------------------------------------------------
     case MessageType.NAVIGATE: {
       const next = { ...model, screen: payload.msg.to }
-      console.log({
-        type: MessageType.APP_SELECTED,
-        msg: { session: model.session, app: payload.msg.to }
-      })
       return {
         model: next,
         effects: [
