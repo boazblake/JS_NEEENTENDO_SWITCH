@@ -39,30 +39,33 @@ export const layout = (
     z-index: 999999;
     will-change: transform;
   `
-              }),
-              showBack
-                ? button(
-                    {
-                      className:
-                        'absolute bottom-8 left-8 px-6 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-300 font-semibold shadow-md',
-                      onclick: () =>
-                        dispatch({ type: 'NAVIGATE', msg: { to: 'menu' } })
-                    },
-                    '← Back'
-                  )
-                : null
+              })
             ]
           : null
       ),
+
       // main content
       div(
         {
           className: 'flex-1 flex flex-col items-center justify-center w-full'
         },
         content
-      )
-
-      // conditional back button
+      ),
+      showBack
+        ? button(
+            {
+              'data-action': 'menu',
+              className:
+                (model.pointer?.hoveredId === 'menu'
+                  ? 'outline outline-4 outline-teal-400 '
+                  : 'outline-none ') +
+                'mt-6 px-8 py-4 rounded-lg bg-gradient-to-r from-pink-500 to-rose-600 text-lg font-semibold shadow-lg hover:scale-105 transition',
+              onclick: () =>
+                dispatch({ type: 'NAVIGATE', msg: { to: Screen.MENU } })
+            },
+            '← Back'
+          )
+        : null
     ]
   )
 }

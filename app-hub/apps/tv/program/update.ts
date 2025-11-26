@@ -7,6 +7,7 @@ import { program as Calibration } from './calibration/index'
 import { program as Spray } from './spray-can/index'
 import { orientationToXY } from './effects.ts'
 import { sendMsg } from '@effects/network'
+import { drawSprayIO } from './spray-can/view' // if you use the canvas draw IO
 
 const routeSubProgram = (
   payload: Payload,
@@ -150,7 +151,13 @@ export const update = (payload: Payload, model: Model, dispatch: Dispatch) => {
         ]
       }
     }
-
+    case 'INTERNAL_SPRAY_TICK': {
+      const nextSpray = Spray.update(payload, model, dispatch)
+      return {
+        model: { ...model, spray: nextSpray },
+        effects: [drawSprayIO({ ...model, spray: nextSpray })]
+      }
+    }
     case MessageType.SPRAY_START:
     case MessageType.SPRAY_POINT:
     case MessageType.SPRAY_END: {

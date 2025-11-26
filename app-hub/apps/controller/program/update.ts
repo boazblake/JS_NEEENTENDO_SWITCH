@@ -80,6 +80,7 @@ export const update = (payload: Payload, model: Model, dispatch: Dispatch) => {
     }
 
     case MessageType.APP_SELECTED:
+      if (model.screen === payload.msg.app) return { model, effects: [] }
       return {
         model: { ...model, screen: payload.msg.app },
         effects: [

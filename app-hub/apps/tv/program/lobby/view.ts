@@ -48,7 +48,10 @@ export const view = (model: any, dispatch: any) =>
                   className:
                     'px-10 py-4 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 font-semibold text-lg shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200',
                   onclick: () =>
-                    dispatch({ type: MessageType.NAVIGATE, to: Screen.MENU })
+                    dispatch({
+                      type: MessageType.NAVIGATE,
+                      msg: { to: Screen.MENU }
+                    })
                 },
                 'Enter Menu'
               )
