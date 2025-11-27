@@ -28,10 +28,8 @@ export const interpretEffects = (
   effects: AppEffect[],
   ws: WebSocket
 ): IO<void>[] => {
-  console.log('wtf')
   const ios: IO<void>[] = []
   for (const e of effects) {
-    console.log(e)
     switch (e.type) {
       case 'NetworkOut':
         ios.push(IO(() => ws.send(JSON.stringify(e.msg))))

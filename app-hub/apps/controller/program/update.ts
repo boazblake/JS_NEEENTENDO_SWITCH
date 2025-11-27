@@ -75,7 +75,6 @@ export const update = (payload: Payload, model: Model, dispatch: Dispatch) => {
     // -----------------------------------------------------------------------
     case MessageType.POINTER_HOVER: {
       const hoveredId = payload.msg.hoveredId || null
-      console.log('hover', payload)
       return { model: { ...model, hoveredId }, effects: [] }
     }
 
@@ -109,7 +108,6 @@ export const update = (payload: Payload, model: Model, dispatch: Dispatch) => {
 
       // 2. update local spray child model
       const r = Spray.update(payload, model.spray, dispatch)
-      console.log(r.model)
       return {
         model: { ...model, spray: r.model },
         effects: [sendFx, ...r.effects]

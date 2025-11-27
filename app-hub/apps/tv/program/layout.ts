@@ -6,7 +6,6 @@ export const layout = (
   model: any,
   dispatch: (m: any) => void
 ) => {
-  console.log(model)
   const showBack =
     model.screen === 'menu' ||
     model.screen === 'calibration' ||
@@ -33,7 +32,6 @@ export const layout = (
       },
 
       ...Object.values(model.controllers).map((c: any, idx: number) => {
-        console.log(idx, c)
         return m('div', {
           class:
             'fixed w-6 h-6 rounded-full pointer-events-none shadow-lg border-2 border-white',

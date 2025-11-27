@@ -218,7 +218,6 @@ export const update = (payload: Payload, model: Model, dispatch: Dispatch) => {
               })
             ]
           : []
-      console.log(players)
       const next = {
         ...model,
         screen,

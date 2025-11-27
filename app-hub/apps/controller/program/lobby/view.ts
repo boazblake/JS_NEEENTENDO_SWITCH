@@ -4,7 +4,6 @@ import type { Dispatch } from 'algebraic-js'
 import { m } from '@shared/mithril-lite'
 
 export const view = (model, dispatch) => {
-  console.log(model.availableTvs)
   return m(
     'div',
     {
@@ -29,7 +28,6 @@ export const view = (model, dispatch) => {
             class:
               'px-6 py-4 rounded-lg bg-white/10 border border-slate-700 hover:bg-white/20 cursor-pointer',
             onclick: () => {
-              console.log('wtf')
               dispatch('SELECT_TV', { tvId })
             }
           },

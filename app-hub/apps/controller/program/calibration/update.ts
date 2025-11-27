@@ -7,7 +7,6 @@ import type { Model, Msg } from './types.js'
 import { env } from '../../main.ts'
 
 export const update = (msg: Msg, model: Model, dispatch: Dispatch) => {
-  console.log('calib child update', msg, model)
   switch (msg.type) {
     case 'ENABLE_MOTION':
       return { model, effects: [startMotion(dispatch)] }
@@ -30,7 +29,6 @@ export const update = (msg: Msg, model: Model, dispatch: Dispatch) => {
           })
         )
       )
-      console.log('screen-out-motion', screenOut)
       return { model: next, effects: [screenOut] }
     }
 

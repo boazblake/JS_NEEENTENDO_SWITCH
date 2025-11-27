@@ -48,7 +48,6 @@ export const update = (
           ]
         }
       }
-      console.log(typeof p)
       if (p?.type === 'REGISTER_PLAYER') {
         const [slot, players] = addPlayer(p.id, p.name).run(model.players)
         const state = { ...model, players }

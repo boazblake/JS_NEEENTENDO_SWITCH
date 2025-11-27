@@ -4,7 +4,6 @@ import type { Dispatch } from 'algebraic-js'
 export const update = (payload, model, _dispatch: Dispatch) => {
   switch (payload.type) {
     case MessageType.SPRAY_START:
-      console.log('SPRAY', payload)
       return { model: { ...model, color: payload.msg.color }, effects: [] }
 
     case MessageType.SPRAY_POINT:

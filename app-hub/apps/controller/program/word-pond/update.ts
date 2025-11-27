@@ -43,7 +43,6 @@ export const update = (
         return { model: { ...model, slot: p.slot }, effects: [] }
       }
       if (p.type === 'STATE_SYNC') {
-        console.log(p)
         return { model: { ...model, state: p.state }, effects: [] }
       }
       return { model, effects: [] }
