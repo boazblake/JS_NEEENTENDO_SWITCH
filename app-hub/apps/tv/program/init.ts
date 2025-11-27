@@ -1,13 +1,16 @@
 import { IO } from 'algebraic-js'
 import { sendMsg } from '@effects/network'
-import { MessageType } from '@shared/types'
-import { init as lobbyInit } from './lobby/init.js'
-import { init as menuInit } from './menu/init.js'
-import { init as calibrationInit } from './calibration/init.js'
-import { init as sprayInit } from './spray-can/init.js'
-import type { Model } from './types.js'
+import { MessageType, Screen } from '@shared/types'
+import { init as lobbyInit } from './lobby/init'
+import { init as menuInit } from './menu/init'
+import { init as calibrationInit } from './calibration/init'
+import { init as sprayInit } from './spray-can/init'
+import type { Model } from './types'
 
-export const init = IO(() => {
+export const init = IO<{
+  model: Model
+  effects: any[]
+}>(() => {
   const session = Math.random().toString(36).substring(2, 7).toUpperCase()
 
   const lobby = lobbyInit.run().model
@@ -17,14 +20,15 @@ export const init = IO(() => {
 
   const model: Model = {
     session,
-    pointer: { x: 0, y: 0, hoverId: '', actions: [] },
-    players: [],
-    status: 'idle',
-    screen: 'lobby',
+    screen: Screen.LOBBY,
+    controllers: {},
+    screenW: window.innerWidth,
+    screenH: window.innerHeight,
+    spray,
+    sprayDrawLoopStarted: false,
     lobby,
     menu,
-    calibration,
-    spray
+    calibration
   }
 
   return {

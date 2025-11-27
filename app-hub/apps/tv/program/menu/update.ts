@@ -1,28 +1,38 @@
-import { MessageType } from '@shared/types'
-import { orientationToXY } from '../effects'
+import { Screen, MessageType } from '@shared/types'
+import type { Model } from '../types'
 
-export const update = (msg: Msg, model: Model) => {
-  console.log(msg)
+export const update = (msg: any, model: Model) => {
   switch (msg.type) {
-    case MessageType.CALIB_UPDATE: {
-      const smooth = (a: number, b: number, f = 0.1) => a + (b - a) * f
-      const { q, g } = payload.msg
-      const [x, y] = orientationToXY(
-        q,
-        g,
-        window.innerWidth,
-        window.innerHeight
-      )
-      const xs = smooth(model.pointer.x, x)
-      const ys = smooth(model.pointer.y, y)
-      return { model: { ...model, pointer: { x: xs, y: ys } }, effects: [] }
+    case 'NAVIGATE':
+      return {
+        model: { ...model, screen: msg.msg.to },
+        effects: []
+      }
+
+    case MessageType.UPDATE_ACTIONS: {
+      const { actions } = msg.msg
+
+      const controllers = { ...model.controllers }
+
+      for (const id in controllers) {
+        const c = controllers[id]
+        controllers[id] = {
+          ...c,
+          pointer: {
+            ...c.pointer,
+            actions
+          }
+        }
+      }
+
+      return {
+        model: {
+          ...model,
+          controllers
+        },
+        effects: []
+      }
     }
-
-    case 'SELECT_APP':
-      return { model: { ...model, screen: msg.app }, effects: [] }
-
-    case 'BACK_TO_MENU':
-      return { model: { ...model, screen: Screen.MENU }, effects: [] }
 
     default:
       return { model, effects: [] }

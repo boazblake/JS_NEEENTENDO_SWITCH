@@ -7,7 +7,7 @@ import { program as Calibration } from './calibration/index'
 import { program as Spray } from './spray-can/index'
 import { orientationToXY } from './effects.ts'
 import { sendMsg } from '@effects/network'
-import { drawSprayIO } from './spray-can/view' // if you use the canvas draw IO
+import { drawSprayIO } from './spray-can/draw' // if you use the canvas draw IO
 
 const routeSubProgram = (
   payload: Payload,
@@ -38,6 +38,66 @@ const routeSubProgram = (
 
 export const update = (payload: Payload, model: Model, dispatch: Dispatch) => {
   switch (payload.type) {
+    case 'INTERNAL_SPRAY_TICK':
+    case MessageType.SPRAY_START: {
+      const r = Spray.update(payload, model.spray)
+      return {
+        model: { ...model, spray: r.model },
+        effects: r.effects
+      }
+    }
+    // -----------------------------------------------------------------------
+    // SPRAY: POINT → synthesize INTERNAL_SPRAY_TICK using controller pointer
+    // -----------------------------------------------------------------------
+    case MessageType.SPRAY_POINT: {
+      // ignore inactive
+      if (!payload.msg.active) {
+        return { model, effects: [] }
+      }
+
+      const { id } = payload.msg
+      const controller = model.controllers[id]
+      if (!controller || !controller.pointer) {
+        return { model, effects: [] }
+      }
+
+      const { x, y } = controller.pointer
+      const color = model.spray.color
+
+      const radius = 14
+      const dotCount = 6
+
+      const dots = Array.from({ length: dotCount }, () => {
+        const angle = Math.random() * 2 * Math.PI
+        const r = Math.sqrt(Math.random()) * radius
+        const dx = Math.cos(angle) * r
+        const dy = Math.sin(angle) * r
+
+        return {
+          x: x + dx,
+          y: y + dy,
+          color,
+          size: 4 + Math.random() * 3,
+          opacity: 0.6 + Math.random() * 0.25
+        }
+      })
+
+      const tickPayload = {
+        type: 'INTERNAL_SPRAY_TICK',
+        msg: { dots }
+      }
+
+      const r = Spray.update(tickPayload, model.spray)
+
+      return {
+        model: { ...model, spray: r.model },
+        effects: r.effects
+      }
+    }
+
+    // You can keep SPRAY_END as a no-op for now
+    // case MessageType.SPRAY_END:
+    //   return { model, effects: [] }
     // -----------------------------------------------------------------------
     //  Window resize events
     // -----------------------------------------------------------------------
@@ -56,7 +116,7 @@ export const update = (payload: Payload, model: Model, dispatch: Dispatch) => {
       return {
         model: {
           ...model,
-          pointer: { ...model.pointer, actions: payload.msg.actions || [] }
+          actions: payload.msg.actions || []
         },
         effects: []
       }
@@ -66,7 +126,16 @@ export const update = (payload: Payload, model: Model, dispatch: Dispatch) => {
     //  Continuous motion updates (controller tilt)
     // -----------------------------------------------------------------------
     case MessageType.CALIB_UPDATE: {
-      const { q, g } = payload.msg
+      const { id, q, g } = payload.msg
+
+      // ensure controller entry exists
+      const controller = model.controllers[id] ?? {
+        pointer: { x: 0, y: 0, hoveredId: null },
+        player: null
+      }
+
+      const pointer = controller.pointer
+
       const [x, y] = orientationToXY(q, g, model.screenW, model.screenH, {
         max: Math.PI / 3,
         invertX: true,
@@ -77,33 +146,39 @@ export const update = (payload: Payload, model: Model, dispatch: Dispatch) => {
       })
 
       const smooth = (a: number, b: number, f = 0.15) => a + (b - a) * f
-      const xs = smooth(model.pointer?.x ?? x, x)
-      const ys = smooth(model.pointer?.y ?? y, y)
 
-      // -------------------------------------------------------------------------
-      //  Hover detection
-      // -------------------------------------------------------------------------
-      let hoveredId = model.pointer?.hoveredId ?? null
-      const actions = model.pointer?.actions ?? []
-      if (actions.length) {
-        const hit = actions.find(
-          (a) =>
-            xs >= a.rect.x &&
-            xs <= a.rect.x + a.rect.w &&
-            ys >= a.rect.y &&
-            ys <= a.rect.y + a.rect.h
-        )
-        hoveredId = hit ? hit.id : null
+      const xs = smooth(pointer.x ?? x, x)
+      const ys = smooth(pointer.y ?? y, y)
+
+      // ---------------------------------------------------------------------------
+      // Hover detection using global model.actions
+      // ---------------------------------------------------------------------------
+      let hoveredId = null
+
+      for (const a of model.actions) {
+        if (
+          xs >= a.rect.x &&
+          xs <= a.rect.x + a.rect.w &&
+          ys >= a.rect.y &&
+          ys <= a.rect.y + a.rect.h
+        ) {
+          hoveredId = a.id
+          break
+        }
       }
 
       const effects: any[] = []
 
-      // When hover target changes, notify controller and maybe trigger local highlight
-      if (hoveredId !== model.pointer?.hoveredId) {
+      // Broadcast hover event if changed
+      if (hoveredId !== pointer.hoveredId) {
         effects.push(
           sendMsg({
             type: MessageType.POINTER_HOVER,
-            msg: { session: model.session, id: hoveredId },
+            msg: {
+              session: model.session,
+              id,
+              hoveredId
+            },
             t: Date.now()
           })
         )
@@ -112,7 +187,18 @@ export const update = (payload: Payload, model: Model, dispatch: Dispatch) => {
       return {
         model: {
           ...model,
-          pointer: { ...model.pointer, x: xs, y: ys, hoveredId }
+          controllers: {
+            ...model.controllers,
+            [id]: {
+              ...controller,
+              pointer: {
+                ...pointer,
+                x: xs,
+                y: ys,
+                hoveredId
+              }
+            }
+          }
         },
         effects
       }
@@ -151,25 +237,7 @@ export const update = (payload: Payload, model: Model, dispatch: Dispatch) => {
         ]
       }
     }
-    case 'INTERNAL_SPRAY_TICK': {
-      const nextSpray = Spray.update(payload, model, dispatch)
-      return {
-        model: { ...model, spray: nextSpray },
-        effects: [drawSprayIO({ ...model, spray: nextSpray })]
-      }
-    }
-    case MessageType.SPRAY_START:
-    case MessageType.SPRAY_POINT:
-    case MessageType.SPRAY_END: {
-      // If this message is for the spray-can screen, forward to that sub-program
-      if (payload.msg.screen === Screen.SPRAYCAN) {
-        const nextSpray = Spray.update(payload, model, dispatch)
-        return { model: { ...model, spray: nextSpray }, effects: [] }
-      }
 
-      // Otherwise ignore or handle globally
-      return { model, effects: [] }
-    }
     default:
       return { model, effects: [] }
   }

@@ -1,14 +1,20 @@
-import { div, h2, p, button } from '@shared/renderer'
 import type { Model, Msg } from './types.js'
 import { runDomIO, browserEnv } from 'algebraic-js'
 import { getPlayerId } from '@effects/identity'
+import { m } from '@shared/mithril-lite'
 
 export const view = (model: Model, dispatch: (m: Msg) => void) =>
-  div({ class: 'controller-view' }, [
-    h2({}, 'WordPond Controller'),
-    p({}, model.slot ? `Slot: ${model.slot}` : 'Not registered'),
+  m(
+    'div',
+    { class: 'controller-view' },
+
+    m('h2', {}, 'WordPond Controller'),
+
+    m('p', {}, model.slot ? `Slot: ${model.slot}` : 'Not registered'),
+
     model.slot
-      ? button(
+      ? m(
+          'button',
           {
             onclick: async () => {
               const id = (await runDomIO(getPlayerId, browserEnv())).run()
@@ -17,7 +23,8 @@ export const view = (model: Model, dispatch: (m: Msg) => void) =>
           },
           'Leave Game'
         )
-      : button(
+      : m(
+          'button',
           {
             onclick: async () => {
               const id = (await runDomIO(getPlayerId, browserEnv())).run()
@@ -26,7 +33,8 @@ export const view = (model: Model, dispatch: (m: Msg) => void) =>
           },
           'Join Game'
         ),
+
     Object.keys(model.state).length
-      ? div({}, `Players: ${Object.keys(model.state.players).length}`)
+      ? m('div', {}, `Players: ${Object.keys(model.state.players).length}`)
       : null
-  ])
+  )

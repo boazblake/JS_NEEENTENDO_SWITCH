@@ -174,7 +174,7 @@ wss.on('connection', (socket) => {
         t: now()
       })
 
-      console.info(`[relay] Controller joined ${session}`)
+      console.info(`[relay] Controller ${msg.id} joined ${session}`)
       return
     }
 

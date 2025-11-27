@@ -1,7 +1,14 @@
 import { IO } from 'algebraic-js'
-import type { Model } from './types'
+import type { SprayModel } from './types'
+import { COLORS } from '@shared/types'
 
-export const init = IO(() => ({
-  model: { dots: [], color: 'teal', spraying: false } as Model,
+export const init = IO<{
+  model: SprayModel
+  effects: any[]
+}>(() => ({
+  model: {
+    dots: [],
+    color: COLORS[3].hex
+  },
   effects: []
 }))

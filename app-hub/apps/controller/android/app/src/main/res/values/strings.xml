@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Wordpond Controller</string>
+    <string name="title_activity_main">Wordpond Controller</string>
+    <string name="package_name">com.wordpond.controller</string>
+    <string name="custom_url_scheme">com.wordpond.controller</string>
+</resources>

@@ -28,6 +28,17 @@ export enum Screen {
  *  Message types
  *  -------------------------------------------------------------------------- */
 
+export const COLORS: { color: string; hex: string }[] = [
+  { color: 'red', hex: '#ef4444' },
+  { color: 'orange', hex: '#f97316' },
+  { color: 'yellow', hex: '#eab308' },
+  { color: 'green', hex: '#22c55e' },
+  { color: 'teal', hex: '#14b8a6' },
+  { color: 'blue', hex: '#3b82f6' },
+  { color: 'purple', hex: '#8b5cf6' },
+  { color: 'pink', hex: '#ec4899' }
+]
+
 export enum MessageType {
   // Relay lifecycle
   RELAY_HELLO = 'RELAY_HELLO',

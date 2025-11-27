@@ -1,4 +1,4 @@
-import { div } from '@shared/renderer'
+import { m } from '@shared/mithril-lite'
 import { Screen } from '@shared/types'
 import { createMsg } from '@shared/utils'
 import type { Model } from './types'
@@ -27,6 +27,6 @@ export const view = (model: Model, dispatch: (p: Payload) => void) => {
         dispatch(createMsg(type, { ...data, screen: Screen.SPRAYCAN }))
       )
     default:
-      return div({}, 'Loading…')
+      return m('div', 'Loading…')
   }
 }

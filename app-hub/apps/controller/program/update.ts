@@ -74,9 +74,9 @@ export const update = (payload: Payload, model: Model, dispatch: Dispatch) => {
     //  Hover feedback from TV
     // -----------------------------------------------------------------------
     case MessageType.POINTER_HOVER: {
-      const hoverId = payload.msg.id || null
-      console.log('hover', hoverId)
-      return { model: { ...model, hoverId }, effects: [] }
+      const hoveredId = payload.msg.hoveredId || null
+      console.log('hover', payload)
+      return { model: { ...model, hoveredId }, effects: [] }
     }
 
     case MessageType.APP_SELECTED:
@@ -86,7 +86,7 @@ export const update = (payload: Payload, model: Model, dispatch: Dispatch) => {
         effects: [
           sendMsg({
             type: MessageType.NAVIGATE,
-            msg: { session: model.session, to: payload.msg.app }
+            msg: { session: model.session, to: payload.msg.app, id: model.id }
           })
         ]
       }

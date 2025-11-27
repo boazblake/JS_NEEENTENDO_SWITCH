@@ -1,51 +1,60 @@
-// Minimal Mithril-style vdom + renderer, with SVG support, no HTML trust, no fragments, no lifecycle.
+// Minimal Mithril-style vdom + renderer, SVG support, no lifecycle, no fragments.
 
 // -----------------------------------------------------------------------------
 // VNODE
 // -----------------------------------------------------------------------------
 
-function Vnode(tag, key, attrs, children, text, dom) {
-  return {
-    tag: tag,
-    key: key,
-    attrs: attrs,
-    children: children,
-    text: text,
-    dom: dom
-  }
+export type VnodeAttrs = Record<string, any> | null
+export type VnodeChild = Vnode<any> | null
+export type VnodeChildren = VnodeChild[] | null
+
+export type Vnode<T = any> = {
+  tag: string
+  key: any
+  attrs: VnodeAttrs
+  children: VnodeChildren
+  text: string | null
+  dom: T | null
 }
 
-// Normalize a single node into a vnode
-Vnode.normalize = function (node) {
-  if (Array.isArray(node)) {
-    // Arrays are just child lists, not fragment vnodes
-    return Vnode.normalizeChildren(node)
-  }
+export function Vnode(
+  tag: string,
+  key: any,
+  attrs: VnodeAttrs,
+  children: VnodeChildren,
+  text: string | null,
+  dom: any | null
+): Vnode {
+  return { tag, key, attrs, children, text, dom }
+}
+
+// Normalize a single node into a vnode or null
+Vnode.normalize = function (node: any): VnodeChild {
+  if (Array.isArray(node)) return Vnode.normalizeChildren(node)
   if (node == null || typeof node === 'boolean') return null
-  if (typeof node === 'object') return node
-  // primitive → text vnode
+  if (typeof node === 'object') return node as Vnode
   return Vnode('#', null, null, null, String(node), null)
 }
 
-// Normalize a children array into vnodes
-Vnode.normalizeChildren = function (input) {
-  var out = new Array(input.length)
-  var numKeyed = 0
-  var numElements = 0
+// Normalize children: returns a dense array, no nulls
+Vnode.normalizeChildren = function (input: any[]): Vnode[] {
+  const out: Vnode[] = []
+  let keyed = 0
+  let elems = 0
 
-  for (var i = 0; i < input.length; i++) {
-    var child = Vnode.normalize(input[i])
-    out[i] = child
-    if (child && child.tag !== '#') {
-      numElements++
-      if (child.key != null) numKeyed++
+  for (let i = 0; i < input.length; i++) {
+    const child = Vnode.normalize(input[i])
+    if (child == null) continue
+    out.push(child)
+    if (child.tag !== '#') {
+      elems++
+      if (child.key != null) keyed++
     }
   }
 
-  // All element children either keyed or unkeyed, no mix
-  if (numElements > 0 && numKeyed !== 0 && numKeyed !== numElements) {
+  if (elems > 0 && keyed !== 0 && keyed !== elems) {
     throw new TypeError(
-      'Children must either all have keys or none have keys (elements only).'
+      'All element children must either all have keys or none.'
     )
   }
 
@@ -53,330 +62,256 @@ Vnode.normalizeChildren = function (input) {
 }
 
 // -----------------------------------------------------------------------------
-// HYPERSCRIPT: m(selector, attrs?, ...children)
-// Reduced grammar: tag, #id, .class
+// HYPERSCRIPT
 // -----------------------------------------------------------------------------
 
-var hasOwn = {}.hasOwnProperty
-var emptyAttrs = {}
-var selectorParser = /(^|#|\.)([^#\.]+)/g
-var selectorCache = Object.create(null)
+const hasOwn = {}.hasOwnProperty
+const emptyAttrs: Record<string, any> = {}
+const selectorParser = /(^|#|\.)([^#\.]+)/g
+const selectorCache: Record<string, { tag: string; attrs: any }> =
+  Object.create(null)
 
-function isEmpty(obj) {
-  for (var k in obj) if (hasOwn.call(obj, k)) return false
+const isEmpty = (o: Record<string, any>): boolean => {
+  for (const k in o) if (hasOwn.call(o, k)) return false
   return true
 }
 
-function compileSelector(selector) {
-  var match
-  var tag = 'div'
-  var classes = []
-  var attrs = {}
+function compileSelector(selector: string) {
+  let match: RegExpExecArray | null
+  let tag = 'div'
+  const classes: string[] = []
+  let attrs: any = {}
 
   while ((match = selectorParser.exec(selector))) {
-    var type = match[1]
-    var value = match[2]
+    const type = match[1]
+    const value = match[2]
     if (type === '' && value !== '') tag = value
     else if (type === '#') attrs.id = value
     else if (type === '.') classes.push(value)
   }
 
-  if (classes.length > 0) attrs.className = classes.join(' ')
+  if (classes.length) attrs.class = classes.join(' ')
   if (isEmpty(attrs)) attrs = emptyAttrs
-  var compiled = { tag: tag, attrs: attrs }
-  selectorCache[selector] = compiled
-  return compiled
+  const result = { tag, attrs }
+  selectorCache[selector] = result
+  return result
 }
 
-function execSelector(state, vnode) {
+function execSelector(state: { tag: string; attrs: any }, vnode: Vnode): Vnode {
   vnode.tag = state.tag
-  var attrs = vnode.attrs
+  let a = vnode.attrs
 
-  if (attrs == null) {
+  if (a == null) {
     vnode.attrs = state.attrs
     return vnode
   }
 
-  if (hasOwn.call(attrs, 'class')) {
-    if (attrs.class != null) attrs.className = attrs.class
-    attrs.class = null
-  }
-
   if (state.attrs !== emptyAttrs) {
-    var className = attrs.className
-    attrs = Object.assign({}, state.attrs, attrs)
-    if (state.attrs.className != null) {
-      attrs.className =
-        className != null
-          ? String(state.attrs.className) + ' ' + String(className)
-          : state.attrs.className
+    const merged: any = { ...state.attrs, ...a }
+    if (state.attrs.class != null && a.class != null) {
+      merged.class = state.attrs.class + ' ' + a.class
     }
+    vnode.attrs = merged
   }
 
-  vnode.attrs = attrs
   return vnode
 }
 
 // m(selector, attrs?, ...children)
-function hyperscript(selector) {
-  if (selector == null || typeof selector !== 'string') {
+export function m(selector: string, ...rest: any[]): Vnode {
+  if (typeof selector !== 'string') {
     throw new Error('Selector must be a string')
   }
 
-  var attrs
-  var i = 1
+  let attrs: any = null
+  let i = 0
+
   if (
-    i < arguments.length &&
-    (arguments[i] == null ||
-      (typeof arguments[i] === 'object' && !Array.isArray(arguments[i])))
+    rest.length &&
+    (rest[0] == null ||
+      (typeof rest[0] === 'object' && !Array.isArray(rest[0])))
   ) {
-    attrs = arguments[i]
-    i++
+    attrs = rest[0]
+    i = 1
   }
 
-  var rawChildren = []
-  for (; i < arguments.length; i++) rawChildren.push(arguments[i])
-
-  var vnode = Vnode('', attrs && attrs.key, attrs || null, null, null, null)
-  vnode.children = Vnode.normalizeChildren(rawChildren)
-
-  var state = selectorCache[selector] || compileSelector(selector)
+  const children = Vnode.normalizeChildren(rest.slice(i))
+  const vnode = Vnode(
+    '',
+    attrs && attrs.key,
+    attrs || null,
+    children,
+    null,
+    null
+  )
+  const state = selectorCache[selector] || compileSelector(selector)
   return execSelector(state, vnode)
 }
 
 // -----------------------------------------------------------------------------
 // DOM RENDERER
-// Element + text only, with SVG support
 // -----------------------------------------------------------------------------
 
-var namespaceMap = {
+const namespaceMap: Record<string, string> = {
   svg: 'http://www.w3.org/2000/svg',
   math: 'http://www.w3.org/1998/Math/MathML'
 }
 
-function getDocument(dom) {
-  return dom.ownerDocument
-}
-
-function getNameSpace(vnode) {
+function getNameSpace(vnode: Vnode): string | undefined {
   return (vnode.attrs && vnode.attrs.xmlns) || namespaceMap[vnode.tag]
 }
 
-// Create a range of nodes
-function createNodes(parent, vnodes, start, end, nextSibling, ns) {
-  for (var i = start; i < end; i++) {
-    var vnode = vnodes[i]
-    if (vnode != null) createNode(parent, vnode, ns, nextSibling)
+function createNodes(
+  parent: Node,
+  vnodes: Vnode[],
+  start: number,
+  end: number,
+  nextSibling: Node | null,
+  ns: string | undefined
+) {
+  for (let i = start; i < end; i++) {
+    const v = vnodes[i]
+    createNode(parent, v, ns, nextSibling)
   }
 }
 
-function createNode(parent, vnode, ns, nextSibling) {
-  var tag = vnode.tag
-  if (tag === '#') {
-    createText(parent, vnode, nextSibling)
+function createNode(
+  parent: Node,
+  vnode: Vnode,
+  ns: string | undefined,
+  nextSibling: Node | null
+) {
+  if (vnode.tag === '#') {
+    const t = (vnode.dom = parent.ownerDocument.createTextNode(
+      vnode.text || ''
+    ))
+    insertDOM(parent, t, nextSibling)
   } else {
     createElement(parent, vnode, ns, nextSibling)
   }
 }
 
-function createText(parent, vnode, nextSibling) {
-  var dom = (vnode.dom = getDocument(parent).createTextNode(vnode.text || ''))
-  insertDOM(parent, dom, nextSibling)
-}
-
-function createElement(parent, vnode, ns, nextSibling) {
-  var tag = vnode.tag
-  var attrs = vnode.attrs
+function createElement(
+  parent: Node,
+  vnode: Vnode,
+  ns: string | undefined,
+  nextSibling: Node | null
+) {
+  const tag = vnode.tag
+  const attrs = vnode.attrs
   ns = getNameSpace(vnode) || ns
 
-  var doc = getDocument(parent)
-  var element = ns ? doc.createElementNS(ns, tag) : doc.createElement(tag)
-
-  vnode.dom = element
+  const doc = parent.ownerDocument as Document
+  const el =
+    ns != null ? doc.createElementNS(ns, tag) : (doc.createElement(tag) as any)
+  vnode.dom = el
 
   if (attrs != null) setAttrs(vnode, attrs, ns)
+  insertDOM(parent, el, nextSibling)
 
-  insertDOM(parent, element, nextSibling)
-
-  var children = vnode.children
-  if (children != null) {
-    createNodes(element, children, 0, children.length, null, ns)
-  }
+  const kids = vnode.children
+  if (kids != null) createNodes(el, kids as Vnode[], 0, kids.length, null, ns)
 }
 
-// Main reconciliation
-function updateNodes(parent, old, vnodes, nextSibling, ns) {
-  if (old === vnodes || (old == null && vnodes == null)) return
-  else if (old == null || old.length === 0) {
-    createNodes(parent, vnodes, 0, vnodes.length, nextSibling, ns)
-  } else if (vnodes == null || vnodes.length === 0) {
+function updateNodes(
+  parent: Node,
+  oldRaw: Vnode[] | undefined,
+  newRaw: Vnode[] | undefined,
+  nextSibling: Node | null,
+  ns: string | undefined
+) {
+  const old = oldRaw || []
+  const vnodes = newRaw || []
+
+  if (old === vnodes) return
+  if (old.length === 0) {
+    if (vnodes.length > 0)
+      createNodes(parent, vnodes, 0, vnodes.length, nextSibling, ns)
+    return
+  }
+  if (vnodes.length === 0) {
     removeNodes(parent, old, 0, old.length)
-  } else {
-    var isOldKeyed = old[0] != null && old[0].key != null
-    var isKeyed = vnodes[0] != null && vnodes[0].key != null
-    var start = 0
-    var oldStart = 0
-
-    if (!isOldKeyed)
-      while (oldStart < old.length && old[oldStart] == null) oldStart++
-    if (!isKeyed) while (start < vnodes.length && vnodes[start] == null) start++
-
-    if (isOldKeyed !== isKeyed) {
-      removeNodes(parent, old, oldStart, old.length)
-      createNodes(parent, vnodes, start, vnodes.length, nextSibling, ns)
-      return
-    }
-
-    if (!isKeyed) {
-      // unkeyed simple diff
-      var commonLength = old.length < vnodes.length ? old.length : vnodes.length
-      start = start < oldStart ? start : oldStart
-
-      for (; start < commonLength; start++) {
-        var o = old[start]
-        var v = vnodes[start]
-        if (o === v || (o == null && v == null)) continue
-        else if (o == null) {
-          createNode(parent, v, ns, getNextSibling(old, start + 1, nextSibling))
-        } else if (v == null) {
-          removeNode(parent, o)
-        } else {
-          updateNode(
-            parent,
-            o,
-            v,
-            getNextSibling(old, start + 1, nextSibling),
-            ns
-          )
-        }
-      }
-
-      if (old.length > commonLength) removeNodes(parent, old, start, old.length)
-      if (vnodes.length > commonLength)
-        createNodes(parent, vnodes, start, vnodes.length, nextSibling, ns)
-
-      return
-    }
-
-    // keyed diff (Mithril-style, stripped)
-    var oldEnd = old.length - 1
-    var end = vnodes.length - 1
-    var map, o, v, oe, ve
-
-    // bottom-up match
-    while (oldEnd >= oldStart && end >= start) {
-      oe = old[oldEnd]
-      ve = vnodes[end]
-      if (oe == null || ve == null || oe.key !== ve.key) break
-      if (oe !== ve) updateNode(parent, oe, ve, nextSibling, ns)
-      if (ve.dom != null) nextSibling = ve.dom
-      oldEnd--
-      end--
-    }
-
-    // top-down match
-    while (oldEnd >= oldStart && end >= start) {
-      o = old[oldStart]
-      v = vnodes[start]
-      if (o == null || v == null || o.key !== v.key) break
-      if (o !== v) {
-        updateNode(
-          parent,
-          o,
-          v,
-          getNextSibling(old, oldStart + 1, nextSibling),
-          ns
-        )
-      }
-      oldStart++
-      start++
-    }
-
-    if (start > end) {
-      removeNodes(parent, old, oldStart, oldEnd + 1)
-      return
-    }
-    if (oldStart > oldEnd) {
-      createNodes(parent, vnodes, start, end + 1, nextSibling, ns)
-      return
-    }
-
-    var originalNextSibling = nextSibling
-    var vnodesLength = end - start + 1
-    var oldIndices = new Array(vnodesLength)
-    var i = 0
-    var matched = 0
-    var pos = 2147483647
-
-    for (i = 0; i < vnodesLength; i++) oldIndices[i] = -1
-
-    for (i = end; i >= start; i--) {
-      if (map == null) map = getKeyMap(old, oldStart, oldEnd + 1)
-      ve = vnodes[i]
-      var oldIndex = ve && map[ve.key]
-      if (oldIndex != null) {
-        pos = oldIndex < pos ? oldIndex : -1
-        oldIndices[i - start] = oldIndex
-        oe = old[oldIndex]
-        old[oldIndex] = null
-        if (oe !== ve) updateNode(parent, oe, ve, nextSibling, ns)
-        if (ve.dom != null) nextSibling = ve.dom
-        matched++
-      }
-    }
-
-    nextSibling = originalNextSibling
-
-    if (matched !== oldEnd - oldStart + 1) {
-      removeNodes(parent, old, oldStart, oldEnd + 1)
-    }
-    if (matched === 0) {
-      createNodes(parent, vnodes, start, end + 1, nextSibling, ns)
-      return
-    }
-
-    var lisIndices
-    var li
-
-    if (pos === -1) {
-      lisIndices = makeLisIndices(oldIndices)
-      li = lisIndices.length - 1
-      for (i = end; i >= start; i--) {
-        v = vnodes[i]
-        if (oldIndices[i - start] === -1) {
-          createNode(parent, v, ns, nextSibling)
-        } else {
-          if (lisIndices[li] === i - start) {
-            li--
-          } else {
-            moveDOM(parent, v, nextSibling)
-          }
-        }
-        if (v.dom != null) nextSibling = v.dom
-      }
-    } else {
-      for (i = end; i >= start; i--) {
-        v = vnodes[i]
-        if (oldIndices[i - start] === -1) {
-          createNode(parent, v, ns, nextSibling)
-        }
-        if (v.dom != null) nextSibling = v.dom
-      }
-    }
+    return
   }
+
+  const oldKeyed = old[0].key != null
+  const newKeyed = vnodes[0].key != null
+
+  // key mode changed → replace whole list
+  if (oldKeyed !== newKeyed) {
+    removeNodes(parent, old, 0, old.length)
+    createNodes(parent, vnodes, 0, vnodes.length, nextSibling, ns)
+    return
+  }
+
+  // unkeyed: simple index diff
+  if (!newKeyed) {
+    const common = Math.min(old.length, vnodes.length)
+    for (let i = 0; i < common; i++) {
+      const o = old[i]
+      const v = vnodes[i]
+      if (o === v) continue
+      updateNode(parent, o, v, getNextSibling(old, i + 1, nextSibling), ns)
+    }
+    if (old.length > common) removeNodes(parent, old, common, old.length)
+    if (vnodes.length > common)
+      createNodes(parent, vnodes, common, vnodes.length, nextSibling, ns)
+    return
+  }
+
+  // keyed: simple, safe diff (no reordering support).
+  const minLen = Math.min(old.length, vnodes.length)
+  let mismatch = false
+
+  for (let i = 0; i < minLen; i++) {
+    const o = old[i]
+    const v = vnodes[i]
+    if (!o || !v || o.key !== v.key) {
+      mismatch = true
+      break
+    }
+    if (o === v) continue
+    updateNode(parent, o, v, getNextSibling(old, i + 1, nextSibling), ns)
+  }
+
+  if (mismatch) {
+    // Fallback: replace entire keyed segment
+    removeNodes(parent, old, 0, old.length)
+    createNodes(parent, vnodes, 0, vnodes.length, nextSibling, ns)
+    return
+  }
+
+  if (old.length > minLen) removeNodes(parent, old, minLen, old.length)
+  if (vnodes.length > minLen)
+    createNodes(parent, vnodes, minLen, vnodes.length, nextSibling, ns)
 }
 
-function updateNode(parent, old, vnode, nextSibling, ns) {
-  var oldTag = old.tag
-  var tag = vnode.tag
-
+function updateNode(
+  parent: Node,
+  old: Vnode,
+  vnode: Vnode,
+  nextSibling: Node | null,
+  ns: string | undefined
+) {
   if (old === vnode) return
 
-  if (oldTag === tag) {
-    if (tag === '#') {
-      updateText(old, vnode)
+  if (old.tag === vnode.tag) {
+    if (vnode.tag === '#') {
+      if (old.text !== vnode.text) {
+        ;(old.dom as any).nodeValue = vnode.text
+      }
+      vnode.dom = old.dom
     } else {
-      updateElement(old, vnode, ns)
+      vnode.dom = old.dom
+      if (old.attrs !== vnode.attrs)
+        updateAttrs(vnode, old.attrs, vnode.attrs, ns)
+      updateNodes(
+        vnode.dom as unknown as Node,
+        old.children as Vnode[],
+        vnode.children as Vnode[],
+        null,
+        ns
+      )
     }
   } else {
     removeNode(parent, old)
@@ -384,204 +319,154 @@ function updateNode(parent, old, vnode, nextSibling, ns) {
   }
 }
 
-function updateText(old, vnode) {
-  if (old.text !== vnode.text) {
-    old.dom.nodeValue = vnode.text
-  }
-  vnode.dom = old.dom
-}
-
-function updateElement(old, vnode, ns) {
-  var dom = (vnode.dom = old.dom)
-  ns = getNameSpace(vnode) || ns
-
-  if (old.attrs !== vnode.attrs) {
-    updateAttrs(vnode, old.attrs, vnode.attrs, ns)
-  }
-
-  updateNodes(dom, old.children, vnode.children, null, ns)
-}
-
-function getKeyMap(vnodes, start, end) {
-  var map = Object.create(null)
-  for (; start < end; start++) {
-    var vnode = vnodes[start]
-    if (vnode != null && vnode.key != null) {
-      map[vnode.key] = start
-    }
-  }
-  return map
-}
-
-var lisTemp = []
-function makeLisIndices(a) {
-  var result = [0]
-  var u = 0
-  var v = 0
-  var il = (lisTemp.length = a.length)
-
-  for (var i = 0; i < il; i++) lisTemp[i] = a[i]
-
-  for (i = 0; i < il; i++) {
-    if (a[i] === -1) continue
-    var j = result[result.length - 1]
-    if (a[j] < a[i]) {
-      lisTemp[i] = j
-      result.push(i)
-      continue
-    }
-    u = 0
-    v = result.length - 1
-    while (u < v) {
-      var c = (u + v) >> 1
-      if (a[result[c]] < a[i]) u = c + 1
-      else v = c
-    }
-    if (a[i] < a[result[u]]) {
-      if (u > 0) lisTemp[i] = result[u - 1]
-      result[u] = i
-    }
-  }
-
-  u = result.length
-  v = result[u - 1]
-  while (u-- > 0) {
-    result[u] = v
-    v = lisTemp[v]
-  }
-  lisTemp.length = 0
-  return result
-}
-
-function getNextSibling(vnodes, i, nextSibling) {
-  for (; i < vnodes.length; i++) {
-    var vnode = vnodes[i]
-    if (vnode != null && vnode.dom != null) return vnode.dom
-  }
-  return nextSibling
-}
-
-function moveDOM(parent, vnode, nextSibling) {
-  if (vnode.dom != null) {
-    insertDOM(parent, vnode.dom, nextSibling)
-  }
-}
-
-function insertDOM(parent, dom, nextSibling) {
-  if (nextSibling != null) parent.insertBefore(dom, nextSibling)
+function insertDOM(parent: Node, dom: Node, next: Node | null) {
+  if (next) parent.insertBefore(dom, next)
   else parent.appendChild(dom)
 }
 
-function removeNodes(parent, vnodes, start, end) {
-  for (var i = start; i < end; i++) {
-    var vnode = vnodes[i]
-    if (vnode != null) removeNode(parent, vnode)
+function removeNodes(
+  parent: Node,
+  vnodes: Vnode[],
+  start: number,
+  end: number
+) {
+  for (let i = start; i < end; i++) {
+    const v = vnodes[i]
+    removeNode(parent, v)
   }
 }
 
-function removeNode(parent, vnode) {
-  if (vnode.dom != null && vnode.dom.parentNode === parent) {
-    parent.removeChild(vnode.dom)
+function removeNode(parent: Node, vnode: Vnode) {
+  const dom = vnode.dom as any
+  if (dom && dom.parentNode === parent) parent.removeChild(dom)
+}
+
+function getNextSibling(
+  vnodes: Vnode[],
+  i: number,
+  next: Node | null
+): Node | null {
+  for (; i < vnodes.length; i++) {
+    const v = vnodes[i]
+    if (v && v.dom) return v.dom as any
   }
+  return next
 }
 
 // -----------------------------------------------------------------------------
-// ATTRIBUTES (simplified)
+// ATTRIBUTES (strict mithril-lite)
 // -----------------------------------------------------------------------------
 
-function setAttrs(vnode, attrs, ns) {
-  for (var key in attrs) {
-    if (!hasOwn.call(attrs, key)) continue
-    setAttr(vnode, key, null, attrs[key], ns)
-  }
+function setAttrs(vnode: Vnode, attrs: any, ns: string | undefined) {
+  for (const k in attrs)
+    if (hasOwn.call(attrs, k)) setAttr(vnode, k, null, attrs[k], ns)
 }
 
-function setAttr(vnode, key, old, value, ns) {
+function setAttr(
+  vnode: Vnode,
+  key: string,
+  old: any,
+  value: any,
+  ns: string | undefined
+) {
   if (key === 'key') return
+  const dom = vnode.dom as any
+
+  // events
+  if (key.startsWith('on')) {
+    dom[key] = typeof value === 'function' ? value : null
+    return
+  }
+
   if (value == null) {
     removeAttr(vnode, key, old, ns)
     return
   }
-
-  var dom = vnode.dom
 
   if (key === 'style') {
     updateStyle(dom, old, value)
     return
   }
 
-  if (key === 'className') {
+  if (key === 'class') {
     dom.setAttribute('class', value)
     return
   }
 
   if (typeof value === 'boolean') {
-    if (value) dom.setAttribute(key, '')
-    else dom.removeAttribute(key)
+    value ? dom.setAttribute(key, '') : dom.removeAttribute(key)
     return
   }
 
   dom.setAttribute(key, String(value))
 }
 
-function removeAttr(vnode, key, old, ns) {
-  if (key === 'key' || old == null) return
-  var dom = vnode.dom
+function removeAttr(
+  vnode: Vnode,
+  key: string,
+  old: any,
+  ns: string | undefined
+) {
+  const dom = vnode.dom as any
+
+  if (key.startsWith('on')) {
+    dom[key] = null
+    return
+  }
 
   if (key === 'style') {
     updateStyle(dom, old, null)
     return
   }
-  if (key === 'className') {
+
+  if (key === 'class') {
     dom.removeAttribute('class')
     return
   }
+
   dom.removeAttribute(key)
 }
 
-function updateAttrs(vnode, old, attrs, ns) {
-  var key
-  var val
-
-  if (old != null) {
-    for (key in old) {
-      if (!hasOwn.call(old, key)) continue
-      val = old[key]
-      if (val != null && (attrs == null || attrs[key] == null)) {
-        removeAttr(vnode, key, val, ns)
-      }
+function updateAttrs(
+  vnode: Vnode,
+  old: any,
+  attrs: any,
+  ns: string | undefined
+) {
+  if (old) {
+    for (const k in old) {
+      const ov = old[k]
+      if (ov != null && (!attrs || attrs[k] == null))
+        removeAttr(vnode, k, ov, ns)
     }
   }
 
-  if (attrs != null) {
-    for (key in attrs) {
-      if (!hasOwn.call(attrs, key)) continue
-      setAttr(vnode, key, old && old[key], attrs[key], ns)
+  if (attrs) {
+    for (const k in attrs) {
+      const nv = attrs[k]
+      const ov = old && old[k]
+      if (nv !== ov) setAttr(vnode, k, ov, nv, ns)
     }
   }
 }
 
-// Very simple style handling
-function updateStyle(element, old, style) {
+function updateStyle(dom: any, old: any, style: any) {
   if (style == null) {
-    element.removeAttribute('style')
+    dom.removeAttribute('style')
     return
   }
+
   if (typeof style === 'string') {
-    element.style = style
+    dom.setAttribute('style', style)
     return
   }
-  // object: reset then assign
-  element.removeAttribute('style')
-  for (var key in style) {
-    if (!hasOwn.call(style, key)) continue
-    var value = style[key]
-    if (value != null) {
-      if (key.indexOf('-') !== -1) {
-        element.style.setProperty(key, String(value))
-      } else {
-        element.style[key] = String(value)
-      }
+
+  dom.removeAttribute('style')
+  for (const k in style) {
+    const v = style[k]
+    if (v != null) {
+      if (k.includes('-')) dom.style.setProperty(k, String(v))
+      else dom.style[k] = String(v)
     }
   }
 }
@@ -590,41 +475,24 @@ function updateStyle(element, old, style) {
 // PUBLIC RENDER
 // -----------------------------------------------------------------------------
 
-function render(dom, vnodes) {
-  if (!dom) throw new TypeError('DOM element being rendered to does not exist')
+export function render(dom: HTMLElement, vnodes: any | any[]) {
+  if (!dom) throw new TypeError('Root DOM is null')
 
-  var namespace = dom.namespaceURI
+  const ns = dom.namespaceURI
+  const prev = (dom as any).vnodes as Vnode[] | undefined
 
-  if (dom.vnodes == null) dom.textContent = ''
+  if (prev == null) dom.textContent = ''
 
-  var list = Array.isArray(vnodes) ? vnodes : [vnodes]
-  list = Vnode.normalizeChildren(list)
+  const list = Vnode.normalizeChildren(
+    Array.isArray(vnodes) ? vnodes : [vnodes]
+  )
 
   updateNodes(
     dom,
-    dom.vnodes,
+    prev,
     list,
     null,
-    namespace === 'http://www.w3.org/1999/xhtml' ? undefined : namespace
+    ns === 'http://www.w3.org/1999/xhtml' ? undefined : ns
   )
-
-  dom.vnodes = list
+  ;(dom as any).vnodes = list
 }
-
-// -----------------------------------------------------------------------------
-// EXPORT
-// -----------------------------------------------------------------------------
-
-var m = function () {
-  return hyperscript.apply(null, arguments)
-}
-
-m.render = render
-m.vnode = Vnode
-
-// usage example:
-// const root = document.getElementById('app')
-// const view = state => m('div#app.wrapper', { style: { color: 'red' } }, 'Hello')
-// m.render(root, view({}))
-
-module.exports = m

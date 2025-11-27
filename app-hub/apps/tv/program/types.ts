@@ -4,11 +4,41 @@ import type { Model as CalibrationModel } from './calibration/types.js'
 import type { Model as SprayModel } from './spray-can/types.js'
 import { Screen } from '@shared/types'
 
-export type Player = { id: string; name: string; slot: number }
+export type ControllerState = {
+  pointer: PointerState
+  player: { id: string; name: string; slot: number } | null
+  spraying: boolean
+}
 
 export type Model = {
-  tvId: string
+  session: string
   screen: Screen
-  players: { id: string; name: string }[]
-  gameState: Record<string, any>
+
+  controllers: Record<string, ControllerState>
+
+  screenW: number
+  screenH: number
+
+  spray: SprayModel
+  sprayDrawLoopStarted: boolean
+
+  lobby: LobbyModel
+  menu: MenuModel
+  calibration: CalibrationModel
+}
+export type ActionRect = {
+  id: string
+  rect: { x: number; y: number; w: number; h: number }
+}
+
+export type PointerState = {
+  x: number
+  y: number
+  hoveredId: string | null
+}
+
+export type PlayerState = {
+  id: string
+  name: string
+  slot: number
 }
