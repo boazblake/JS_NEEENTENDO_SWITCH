@@ -8,7 +8,7 @@ export const init = IO<{
 }>(() => ({
   model: {
     dots: [],
-    color: COLORS[3].hex
+    colors: {}
   },
   effects: []
 }))

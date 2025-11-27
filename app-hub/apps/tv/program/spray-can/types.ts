@@ -7,8 +7,14 @@ export type Dot = {
 }
 
 export type SprayModel = {
-  dots: Dot[]
-  color: string
+  dots: {
+    x: number
+    y: number
+    color: string
+    size: number
+    opacity: number
+  }[]
+  colors: Record<string, string>
 }
 
 type InternalSprayTick = {

@@ -50,19 +50,15 @@ export const update = (payload: Payload, model: Model, dispatch: Dispatch) => {
     // SPRAY: POINT → synthesize INTERNAL_SPRAY_TICK using controller pointer
     // -----------------------------------------------------------------------
     case MessageType.SPRAY_POINT: {
-      // ignore inactive
-      if (!payload.msg.active) {
-        return { model, effects: [] }
-      }
+      if (!payload.msg.active) return { model, effects: [] }
 
-      const { id } = payload.msg
+      const id = payload.msg.id
       const controller = model.controllers[id]
-      if (!controller || !controller.pointer) {
-        return { model, effects: [] }
-      }
+      if (!controller) return { model, effects: [] }
 
       const { x, y } = controller.pointer
-      const color = model.spray.color
+
+      const color = model.spray?.colors[id] ?? '#22c55e' // <-- from mapping
 
       const radius = 14
       const dotCount = 6
@@ -70,12 +66,9 @@ export const update = (payload: Payload, model: Model, dispatch: Dispatch) => {
       const dots = Array.from({ length: dotCount }, () => {
         const angle = Math.random() * 2 * Math.PI
         const r = Math.sqrt(Math.random()) * radius
-        const dx = Math.cos(angle) * r
-        const dy = Math.sin(angle) * r
-
         return {
-          x: x + dx,
-          y: y + dy,
+          x: x + Math.cos(angle) * r,
+          y: y + Math.sin(angle) * r,
           color,
           size: 4 + Math.random() * 3,
           opacity: 0.6 + Math.random() * 0.25
@@ -208,18 +201,30 @@ export const update = (payload: Payload, model: Model, dispatch: Dispatch) => {
     //  Controller successfully joined
     // -----------------------------------------------------------------------
     case MessageType.PLAYER_JOINED: {
+      const players = [
+        ...(model.players || []),
+        {
+          id: payload.msg.id || '',
+          name: payload.msg.name || 'Player'
+        }
+      ]
+      const screen = players.length == 1 ? Screen.MENU : model.screen
+      const effects =
+        players.length > 1
+          ? [
+              sendMsg({
+                type: MessageType.APP_SELECTED,
+                msg: { session: model.session, app: screen }
+              })
+            ]
+          : []
+      console.log(players)
       const next = {
         ...model,
-        screen: Screen.MENU,
-        players: [
-          ...(model.players || []),
-          {
-            id: payload.msg.id || '',
-            name: payload.msg.name || 'Player'
-          }
-        ]
+        screen,
+        players
       }
-      return { model: next, effects: [] }
+      return { model: next, effects }
     }
 
     // -----------------------------------------------------------------------
