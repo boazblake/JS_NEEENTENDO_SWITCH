@@ -1,7 +1,7 @@
 import { IO } from 'algebraic-js'
 import type { Model } from './types'
 
-export const init = IO(() => ({
-  model: { color: 'teal', spraying: false } as Model,
+export const init = IO<{ model: Model; effects: any[] }>(() => ({
+  model: { color: 'teal' },
   effects: []
 }))

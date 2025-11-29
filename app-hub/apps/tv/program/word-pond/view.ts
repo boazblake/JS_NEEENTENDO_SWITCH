@@ -1,19 +1,16 @@
+// tv/word-pond/view.ts
 import { m } from '@shared/mithril-lite'
-import type { Model, Msg } from './types.js'
+import type { Model } from './types'
+import type { TVCtx } from '../types'
 
-export const view = (model: Model) =>
+export const view = (_model: Model, _dispatch: any, _ctx: TVCtx) =>
   m(
     'div',
-    { class: 'tv-view' },
-
-    m('h2', {}, 'Connected Players'),
-
-    m(
-      'ul',
-      {},
-
-      ...Object.values(model.players).map((p) =>
-        m('li', { key: p.slot }, `Slot ${p.slot}: ${p.id}`)
-      )
-    )
+    { class: 'fixed inset-0 bg-slate-900 pointer-events-none' },
+    m('canvas', {
+      id: 'wordpond-canvas',
+      width: window.innerWidth,
+      height: window.innerHeight,
+      class: 'w-full h-full block'
+    })
   )

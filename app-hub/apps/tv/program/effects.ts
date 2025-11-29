@@ -1,3 +1,5 @@
+import { IO } from 'algebraic-js'
+
 // shared/orientation.ts
 // Quaternion-based pointer mapping using device's forward direction.
 // User calibrates by pointing phone at screen center, then tilts naturally.
@@ -87,3 +89,15 @@ export const orientationToXY = (
 
   return [xPix, yPix]
 }
+
+export const startTickLoopIO = (dispatch: any) =>
+  IO(() => {
+    const loop = () => {
+      window.dispatch({
+        type: 'TICK',
+        msg: {}
+      })
+      requestAnimationFrame(loop)
+    }
+    requestAnimationFrame(loop)
+  })

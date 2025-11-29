@@ -1,27 +1,26 @@
-import type { Model as LobbyModel } from './lobby/types.js'
-import type { Model as MenuModel } from './menu/types.js'
-import type { Model as CalibrationModel } from './calibration/types.js'
-import type { Model as SprayModel } from './spray-can/types.js'
-import { Screen } from '@shared/types'
+export type Screen = 'lobby' | 'menu' | 'calibration' | 'spraycan' | 'wordpond'
 
+import type { Model as LobbyModel } from './lobby/types'
+import type { Model as MenuModel } from './menu/types'
+import type { Model as CalibrationModel } from './calibration/types'
+import type { Model as SprayModel } from './spray-can/types'
+import type { Model as WordPondModel } from './word-pond/types'
 
-export type Model = {
+export type ControllerModel = {
   id: string
   name: string
   session: string
   status: 'idle' | 'connecting' | 'connected'
   screen: Screen
-  lobby: any
-  menu: any
-  calibration: any
-  spray: any
-}
+
+  hoveredId?: string | null
+
+  lobby: LobbyModel
+  menu: MenuModel
+  calibration: CalibrationModel
+  spray: SprayModel
+  wordpond: WordPondModel
 }
 
-export type Msg =
-  | { type: 'NETWORK_IN'; payload: any }
-  | { type: 'NAVIGATE'; to: Model['screen'] }
-  | { screen: Screen.LOBBY; type: Screen.LOBBY; msg: any }
-  | { screen: Screen.MENU; type: Screen.MENU; msg: any }
-  | { screen: Screen.CALIBRATION; type: Screen.CALIBRATION; msg: any }
-  | { screen: Screen.SPRAYCAN; type: Screen.SPRAYCAN; msg: any }
+// CTX = full parent model
+export type ControllerCtx = ControllerModel

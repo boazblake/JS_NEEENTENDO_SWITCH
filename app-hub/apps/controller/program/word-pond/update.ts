@@ -1,54 +1,16 @@
-import { IO } from 'algebraic-js'
-import type { Model, Msg } from './types.js'
-import { sendIO } from '@effects/network'
+// controller/word-pond/update.ts
+import type { Model } from './types'
+import type { ControllerCtx } from '../types'
+import { WordPondMsg } from '@shared/types'
 
 export const update = (
-  msg: Msg,
+  msg: any,
   model: Model,
-  _dispatch: (m: Msg) => void,
-  ws: WebSocket
+  _dispatch: any,
+  _ctx: ControllerCtx
 ) => {
-  switch (msg.type) {
-    case 'UNREGISTER_PLAYER':
-      return {
-        model,
-        effects: [
-          sendIO(
-            ws,
-            JSON.stringify({
-              type: 'UNREGISTER_PLAYER',
-              id: msg.id
-            })
-          )
-        ]
-      }
-    case 'REGISTER_PLAYER':
-      return {
-        model: { ...model, id: msg.id },
-        effects: [
-          sendIO(
-            ws,
-            JSON.stringify({
-              type: 'REGISTER_PLAYER',
-              id: msg.id,
-              name: msg.name
-            })
-          )
-        ]
-      }
-
-    case 'NETWORK_IN': {
-      const p = JSON.parse(msg.payload)
-      if (p.type === 'ACK_PLAYER' && p.id === model.id) {
-        return { model: { ...model, slot: p.slot }, effects: [] }
-      }
-      if (p.type === 'STATE_SYNC') {
-        return { model: { ...model, state: p.state }, effects: [] }
-      }
-      return { model, effects: [] }
-    }
-
-    default:
-      return { model, effects: [] }
+  if (msg.type === WordPondMsg.STATE) {
+    return { model: { ...model, state: msg.msg.state }, effects: [] }
   }
+  return { model, effects: [] }
 }

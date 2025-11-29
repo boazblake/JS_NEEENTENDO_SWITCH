@@ -4,7 +4,11 @@ import { init } from './init.js'
 import { update } from './update.js'
 import { view } from './view.js'
 
-export const createProgram: Program<Model, Msg> = {
+/**
+ * Controller spray-can program.
+ * Sends spray events to TV via WebSocket using sendMsg().
+ */
+export const program: Program<Model, Msg> = {
   init,
   update,
   view

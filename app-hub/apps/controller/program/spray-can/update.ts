@@ -1,20 +1,16 @@
-import { MessageType } from '@shared/types'
-import type { Dispatch } from 'algebraic-js'
+// controller/spray-can/update.ts
+import type { Model } from './types'
+import type { ControllerCtx } from '../types'
 
-export const update = (payload, model, _dispatch: Dispatch) => {
-  switch (payload.type) {
-    case MessageType.SPRAY_START:
-      return { model: { ...model, color: payload.msg.color }, effects: [] }
-
-    case MessageType.SPRAY_POINT:
-      return { model: { ...model, spraying: true }, effects: [] }
-
-    case MessageType.SPRAY_END:
-      return { model: { ...model, spraying: false }, effects: [] }
-
-    case 'APP_SELECTED':
-      return { model: { ...model, screen: payload.msg.app }, effects: [] }
-
+export const update = (
+  msg: any,
+  model: Model,
+  _dispatch: any,
+  _ctx: ControllerCtx
+) => {
+  switch (msg.type) {
+    case 'SET_COLOR':
+      return { model: { ...model, color: msg.msg.color }, effects: [] }
     default:
       return { model, effects: [] }
   }

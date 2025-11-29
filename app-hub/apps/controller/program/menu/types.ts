@@ -1,2 +1,4 @@
-export type Model = { ready: boolean }
-export type Msg = { type: 'NETWORK_IN'; payload: any }
+// controller/menu/types.ts
+export type Model = {
+  items: { id: string; label: string; screen: string }[]
+}

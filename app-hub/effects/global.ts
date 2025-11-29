@@ -23,24 +23,6 @@ export const registerResizeIO = (dispatch: (msg: Msg) => void) =>
   )
 
 /**
- * Creates a periodic IO that sends the current model to all clients.
- * The stream emits once every `ms` milliseconds.
- */
-
-export const broadcastState = (ws, getState, ms = 2000) => {
-  const s = Stream.interval(ms)
-  const unsub = s.subscribe({
-    next: () => {
-      const state = getState()
-      console.log(JSON.stringify({ type: 'STATE_SYNC', msg: { state } }))
-      sendIO(ws, JSON.stringify({ type: 'STATE_SYNC', msg: { state } })).run()
-    },
-    error: (e) => console.error('[broadcastState]', e)
-  })
-  return IO(() => unsub) // returning IO allows runtime to cancel it later
-}
-
-/**
  * Tracks `[data-action]` elements and dispatches their bounding rects.
  * Relies on your existing resize IO to trigger on window size changes.
  */

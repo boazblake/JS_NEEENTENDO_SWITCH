@@ -1,14 +1,8 @@
+// controller/word-pond/init.ts
 import { IO } from 'algebraic-js'
-import type { Model } from './types.js'
+import type { Model } from './types'
 
-export const init = (): IO<{ model: Model; effects: any[] }> =>
-  IO(() => ({
-    model: {
-      host: 'CONTROLLER',
-      id: undefined,
-      slot: undefined,
-      name: 'Guest',
-      state: {}
-    },
-    effects: []
-  }))
+export const init = IO<{ model: Model; effects: any[] }>(() => ({
+  model: { pond: [], state: undefined },
+  effects: []
+}))

@@ -1,8 +1,8 @@
 import { m } from '@shared/mithril-lite'
 import { MessageType, Screen } from '@shared/types'
 
-export const view = (model, dispatch) =>
-  m(
+export const view = (model, dispatch, ctx) => {
+  return m(
     'div',
     {
       class:
@@ -35,11 +35,7 @@ export const view = (model, dispatch) =>
         'Join this session to begin'
       ),
 
-      m(
-        'h2',
-        { class: 'text-5xl font-mono text-teal-400 mb-10' },
-        model.session
-      )
+      m('h2', { class: 'text-5xl font-mono text-teal-400 mb-10' }, ctx.session)
 
       // // players
       // m(
@@ -76,3 +72,4 @@ export const view = (model, dispatch) =>
       //   : m('') // empty vnode instead of string
     )
   )
+}

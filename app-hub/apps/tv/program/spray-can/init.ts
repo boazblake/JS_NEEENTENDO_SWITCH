@@ -1,14 +1,8 @@
+// tv/spray-can/init.ts
 import { IO } from 'algebraic-js'
-import type { SprayModel } from './types'
-import { COLORS } from '@shared/types'
+import type { Model } from './types'
 
-export const init = IO<{
-  model: SprayModel
-  effects: any[]
-}>(() => ({
-  model: {
-    dots: [],
-    colors: {}
-  },
+export const init = IO<{ model: Model; effects: any[] }>(() => ({
+  model: { dots: [], colors: {} },
   effects: []
 }))

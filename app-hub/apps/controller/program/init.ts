@@ -1,13 +1,16 @@
+// controller/init.ts
 import { IO } from 'algebraic-js'
-import { sendMsg } from '@effects/network'
-import type { Model } from './types.js'
+import type { ControllerModel } from './types'
 
-import { init as lobbyInit } from './lobby/init.js'
-import { init as menuInit } from './menu/init.js'
-import { init as calibrationInit } from './calibration/init.js'
-import { init as sprayInit } from './spray-can/init.js'
-import { env } from '../main.ts'
-export const init = IO(() => {
+import { init as lobbyInit } from './lobby/init'
+import { init as menuInit } from './menu/init'
+import { init as calibrationInit } from './calibration/init'
+import { init as sprayInit } from './spray-can/init'
+import { init as wordPondInit } from './word-pond/init'
+
+import { env } from '../main'
+
+export const init = IO<{ model: ControllerModel; effects: any[] }>(() => {
   const { id, session } = env
   const name = 'Guest'
 
@@ -15,20 +18,21 @@ export const init = IO(() => {
   const menu = menuInit.run().model
   const calibration = calibrationInit.run().model
   const spray = sprayInit.run().model
+  const wordpond = wordPondInit.run().model
 
-  const model: Model = {
+  const model: ControllerModel = {
     id,
     name,
     session,
     status: 'idle',
     screen: 'lobby',
+    hoveredId: null,
     lobby,
     menu,
     calibration,
-    spray
+    spray,
+    wordpond
   }
 
-  const effects = []
-
-  return { model, effects }
+  return { model, effects: [] }
 })

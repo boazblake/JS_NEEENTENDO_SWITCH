@@ -1,6 +1,8 @@
+// tv/spray-can/draw.ts
 import { IO } from 'algebraic-js'
+import type { Model } from './types'
 
-export const drawSprayIO = (spray) =>
+export const drawSprayIO = (spray: Model) =>
   IO(() => {
     const el = document.getElementById(
       'spray-canvas'

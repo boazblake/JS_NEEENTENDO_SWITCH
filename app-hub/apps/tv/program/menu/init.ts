@@ -1,11 +1,15 @@
+// tv/menu/init.ts
 import { IO } from 'algebraic-js'
-import type { Model } from './types.js'
-import { Screen } from '@shared/types'
+import type { Model } from './types'
 
-export const init = IO(() => ({
+export const init = IO<{ model: Model; effects: any[] }>(() => ({
   model: {
-    screen: Screen.MENU,
-    pointer: { x: 0, y: 0 }
-  } as Model,
+    items: [
+      { id: 'calibration', label: 'Calibration', screen: 'calibration' },
+      { id: 'spraycan', label: 'Spray Can', screen: 'spraycan' },
+      { id: 'wordpond', label: 'Word Pond', screen: 'wordpond' },
+      { id: 'lobby', label: 'Back to Lobby', screen: 'lobby' }
+    ]
+  },
   effects: []
 }))

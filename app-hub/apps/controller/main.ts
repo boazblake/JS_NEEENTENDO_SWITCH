@@ -5,6 +5,8 @@ import { program } from './program/index.js'
 import { runSocketStream } from '@effects/network'
 import { registerResizeIO } from '@effects/global'
 import { Motion } from '@boazblake/capacitor-motion'
+
+import '@ionic/core/css/ionic.bundle.css'
 // import { Capacitor } from '@capacitor/core'
 // Capacitor.setLogLevel('warn')
 // 1. Open a WebSocket connection to your relay

@@ -1,29 +1,32 @@
-import { layout } from './layout.js'
-import { view as lobbyView } from './lobby/view.js'
-import { view as menuView } from './menu/view.js'
-import { view as calibrationView } from './calibration/view.js'
-import { view as sprayView } from './spray-can/view.js'
-import type { Model } from './types.js'
+// tv/view.ts
+import { layout } from './layout'
+import type { TVModel, TVCtx } from './types'
+import { program as Lobby } from './lobby'
+import { program as Menu } from './menu'
+import { program as Calibration } from './calibration'
+import { program as Spray } from './spray-can'
+import { program as WordPond } from './word-pond'
 
-export const view = (model: Model, dispatch: any) => {
+export const view = (model: TVModel, dispatch: any) => {
+  const ctx: TVCtx = model
   let content
 
   switch (model.screen) {
     case 'menu':
-      content = menuView(model, dispatch)
+      content = Menu.view(model.menu, dispatch, ctx)
       break
-
     case 'calibration':
-      content = calibrationView(model, dispatch)
+      content = Calibration.view(model.calibration, dispatch, ctx)
       break
-
     case 'spraycan':
-      content = sprayView(model, dispatch)
+      content = Spray.view(model.spray, dispatch, ctx)
       break
-
+    case 'wordpond':
+      content = WordPond.view(model.wordpond, dispatch, ctx)
+      break
     case 'lobby':
     default:
-      content = lobbyView(model, dispatch)
+      content = Lobby.view(model.lobby, dispatch, ctx)
   }
 
   return layout(content, model, dispatch)

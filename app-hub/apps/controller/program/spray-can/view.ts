@@ -1,9 +1,12 @@
+// controller/spray-can/view.ts
 import { m } from '@shared/mithril-lite'
 import { MessageType, COLORS } from '@shared/types'
+import type { Model } from './types'
+import type { ControllerCtx } from '../types'
 
-export const view = (model, dispatch) => {
-  const current = model.spray.color ?? 'teal'
-  const getColor = (c) => COLORS.find((x) => x.color === current)
+export const view = (model: Model, dispatch: any, _ctx: ControllerCtx) => {
+  const current = model.color
+  const getColor = (c: string) => COLORS.find((x) => x.color === c)!
 
   return m(
     'div',
@@ -11,18 +14,11 @@ export const view = (model, dispatch) => {
       class:
         'min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-gray-900 to-slate-800 text-white px-6'
     },
-
     m('h1', { class: 'text-3xl font-bold mb-6' }, 'Spray Mode'),
 
-    //
-    // Color Picker
-    //
     m(
       'div',
-      {
-        class: 'flex flex-wrap justify-center gap-3 mb-10 w-full max-w-md'
-      },
-
+      { class: 'flex flex-wrap justify-center gap-3 mb-10 w-full max-w-md' },
       ...COLORS.map((c) =>
         m(
           'button',
@@ -35,38 +31,27 @@ export const view = (model, dispatch) => {
                 ? 'border-white scale-110'
                 : 'border-slate-600 hover:scale-105'),
             style: `background:${c.hex};`,
-            onclick: () => dispatch(MessageType.SPRAY_START, c)
+            onclick: () => {
+              dispatch('SET_COLOR', { color: c.color })
+              dispatch(MessageType.SPRAY_START, { color: c.color })
+            }
           },
-
           m('span', { class: 'sr-only' }, c.color)
         )
       )
     ),
 
-    //
-    // Trigger Button
-    //
     m(
       'button',
       {
         class:
-          'mt-4 px-10 py-5 text-xl font-semibold rounded-full bg-gradient-to-r ' +
-          'from-teal-500 to-emerald-600 shadow-lg active:scale-95 transition-transform ' +
-          'select-none touch-none',
-        style: `
-          -webkit-user-select: none;
-          user-select: none;
-          -webkit-touch-callout: none;
-          -webkit-tap-highlight-color: transparent;
-        `,
-
+          'mt-4 px-10 py-5 text-xl font-semibold rounded-full bg-teal-600 active:scale-95 transition-transform',
         ontouchstart: () => dispatch(MessageType.SPRAY_POINT, { active: true }),
         ontouchend: () =>
           dispatch(MessageType.SPRAY_END, {
             active: false,
             ...getColor(current)
           }),
-
         onmousedown: () => dispatch(MessageType.SPRAY_POINT, { active: true }),
         onmouseup: () =>
           dispatch(MessageType.SPRAY_END, {
@@ -75,12 +60,6 @@ export const view = (model, dispatch) => {
           })
       },
       'SPRAY'
-    ),
-
-    m(
-      'p',
-      { class: 'text-slate-400 mt-8 text-center max-w-sm' },
-      'Pick a color, then hold the button to spray on the TV.'
     )
   )
 }

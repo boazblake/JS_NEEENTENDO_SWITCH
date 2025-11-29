@@ -21,7 +21,105 @@ export enum Screen {
   LOBBY = 'lobby',
   MENU = 'menu',
   CALIBRATION = 'calibration',
-  SPRAYCAN = 'spraycan'
+  SPRAYCAN = 'spraycan',
+  WORDPOND = 'wordpond'
+}
+
+/** --------------------------------------------------------------------------
+ *  Word-Pond message type strings
+ *  -------------------------------------------------------------------------- */
+
+export const WordPondMsg = {
+  NET_UPDATE: 'WORDPOND_NET_UPDATE', // controller → tv
+  SHAKE: 'WORDPOND_SHAKE', // controller → tv
+  STATE: 'WORDPOND_STATE' // tv → controller (optional)
+} as const
+
+export type WordPondMsgType =
+  | typeof WordPondMsg.NET_UPDATE
+  | typeof WordPondMsg.SHAKE
+  | typeof WordPondMsg.STATE
+
+/** --------------------------------------------------------------------------
+ *  Canonical payload (reuses your generic Payload structure)
+ *  -------------------------------------------------------------------------- */
+
+export type WordPondPayload =
+  | WordPondNetUpdate
+  | WordPondShake
+  | WordPondStatePayload
+
+/** --------------------------------------------------------------------------
+ *  Controller → TV
+ *  -------------------------------------------------------------------------- */
+
+export type WordPondNetUpdate = {
+  type: typeof WordPondMsg.NET_UPDATE
+  msg: {
+    screen: Screen.WORDPOND
+    session: string
+    id: string // controller id
+    x: number // normalized 0..1
+    y: number // normalized 0..1
+  }
+  t?: number
+}
+
+export type WordPondShake = {
+  type: typeof WordPondMsg.SHAKE
+  msg: {
+    screen: Screen.WORDPOND
+    session: string
+    id: string // controller id
+  }
+  t?: number
+}
+
+/** --------------------------------------------------------------------------
+ *  TV → Controllers
+ *  -------------------------------------------------------------------------- */
+
+export type WordPondStatePayload = {
+  type: typeof WordPondMsg.STATE
+  msg: {
+    screen: Screen.WORDPOND
+    session: string
+    state: WordPondState // defined below
+  }
+  t?: number
+}
+
+/** --------------------------------------------------------------------------
+ *  Game state model shared between TV and controllers
+ *  -------------------------------------------------------------------------- */
+
+export type Letter = {
+  id: string
+  char: string
+  x: number
+  y: number
+  vx: number
+  vy: number
+  caughtBy: string | null // player id
+}
+
+export type Pond = {
+  id: string // player id
+  letters: string[]
+}
+
+export type Net = {
+  id: string // player id
+  x: number
+  y: number
+}
+
+export type WordPondState = {
+  players: string[]
+  letters: Letter[]
+  nets: Record<string, Net>
+  ponds: Record<string, Pond>
+  targetWord: string
 }
 
 /** --------------------------------------------------------------------------
@@ -55,12 +153,13 @@ export enum MessageType {
   TV_LIST = 'TV_LIST',
   NO_SESSION = 'NO_SESSION',
   NAVIGATE = 'NAVIGATE',
-  APP_SELECTED = 'APP_SELECTED',
+  SCREEN_SELECTED = 'SCREEN_SELECTED',
   // Motion / calibration
   CALIB_UPDATE = 'CALIB_UPDATE',
 
   // Pointer and hover interactions
   POINTER_HOVER = 'POINTER_HOVER',
+  POINTER_CLICKED = 'POINTER_CLICKED',
 
   SPRAY_START = 'SPRAY_START', // select color
   SPRAY_POINT = 'SPRAY_POINT', // spray active (continuous)

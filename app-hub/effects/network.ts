@@ -1,6 +1,22 @@
 import { Stream, Reader, IO, type DomEnv, type Dispatch } from 'algebraic-js'
 import { MessageType, NetworkMessage, type Payload } from '@/shared/types.js'
+/**
+ * Creates a periodic IO that sends the current model to all clients.
+ * The stream emits once every `ms` milliseconds.
+ */
 
+export const broadcastState = (ws, getState, ms = 2000) => {
+  const s = Stream.interval(ms)
+  const unsub = s.subscribe({
+    next: () => {
+      const state = getState()
+      console.log(JSON.stringify({ type: 'STATE_SYNC', msg: { state } }))
+      sendIO(ws, JSON.stringify({ type: 'STATE_SYNC', msg: { state } })).run()
+    },
+    error: (e) => console.error('[broadcastState]', e)
+  })
+  return IO(() => unsub) // returning IO allows runtime to cancel it later
+}
 /**
  * Pure Reader<DomEnv, IO> for sending a message over WebSocket.
  * Describes the effect but does not execute it until interpreted

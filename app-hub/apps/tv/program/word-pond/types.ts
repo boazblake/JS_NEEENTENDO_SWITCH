@@ -1,11 +1,29 @@
-export type Model = {
-  host: 'TV'
-  players: Record<string, { id: string; name: string; slot?: number }>
-  count: number
+// tv/word-pond/types.ts
+export type Letter = {
+  id: string
+  char: string
+  x: number
+  y: number
+  vx: number
+  vy: number
+  caughtBy: string | null
 }
 
-export type Msg =
-  | { type: 'REGISTER_PLAYER'; id: string; name: string }
-  | { type: 'ACK_PLAYER'; id: string; slot: number }
-  | { type: 'NETWORK_IN'; payload: any }
-  | { type: 'STATE_SYNC'; state: any }
+export type Net = {
+  id: string
+  x: number
+  y: number
+}
+
+export type Pond = {
+  id: string
+  letters: string[]
+}
+
+export type Model = {
+  players: string[]
+  letters: Letter[]
+  nets: Record<string, Net>
+  ponds: Record<string, Pond>
+  targetWord: string
+}

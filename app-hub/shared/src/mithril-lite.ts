@@ -61,6 +61,31 @@ Vnode.normalizeChildren = function (input: any[]): Vnode[] {
   return out
 }
 
+// Normalize children: returns a dense array, no nulls
+Vnode.normalizeChildren = function (input: any[]): Vnode[] {
+  const out: Vnode[] = []
+  let keyed = 0
+  let elems = 0
+
+  for (let i = 0; i < input.length; i++) {
+    const child = Vnode.normalize(input[i])
+    if (child == null) continue
+    out.push(child)
+    if (child.tag !== '#') {
+      elems++
+      if (child.key != null) keyed++
+    }
+  }
+
+  if (elems > 0 && keyed !== 0 && keyed !== elems) {
+    throw new TypeError(
+      'All element children must either all have keys or none.'
+    )
+  }
+
+  return out
+}
+
 // -----------------------------------------------------------------------------
 // HYPERSCRIPT
 // -----------------------------------------------------------------------------

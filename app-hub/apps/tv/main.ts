@@ -2,7 +2,7 @@ import { IO, askDocument, browserEnv, runDomIO, renderApp } from 'algebraic-js'
 import { renderer } from '@shared/renderer'
 import './main.css'
 import { program } from './program/index.js'
-import { runSocketStream } from '@/effects/network.js'
+import { runSocketStream, broadcastState } from '@/effects/network.js'
 import { registerResizeIO, registerActionsIO } from '@/effects/global.js'
 import eruda from 'eruda'
 // eruda.init()
@@ -12,7 +12,7 @@ import eruda from 'eruda'
 // ---------------------------------------------------------------------------
 
 const ws = new WebSocket('wss://192.168.7.195:8081')
-const env = { ...browserEnv(), ws }
+export const env = { ...browserEnv(), ws }
 
 // ---------------------------------------------------------------------------
 //  Root element
@@ -29,7 +29,7 @@ const rootIO = IO(() => runDomIO(rootReader, env))
 
 const io = renderApp(renderer, env)(rootIO, program)
 const { dispatch } = io.run()
-
+window.dispatch = dispatch
 // ---------------------------------------------------------------------------
 //  Environment-bound IOs
 // ---------------------------------------------------------------------------
