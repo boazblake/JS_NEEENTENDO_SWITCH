@@ -10,19 +10,26 @@ export const view = (
 ) => {
   const hovered = ctx.hoveredId
   return m(
-    'button',
+    'div',
     {
       class:
-        'mx-4 mt-3 bg-blue-600 py-2 rounded text-lg active:scale-95 text-white w-[calc(100%-2rem)]',
-      onclick: () => {
-        if (!hovered) return
-        window.dispatch({
-          type: MessageType.NAVIGATE,
-          msg: { screen: hovered }
-        })
-      }
+        'flex flex-col items-center justify-center h-full  text-white bg-slate-900'
     },
-    `Select: ${hovered ?? '...'}`
+    m(
+      'ion-button',
+      {
+        class:
+          'mx-4 mt-3 bg-blue-600 py-2 rounded text-lg active:scale-95 text-white w-[calc(100%-2rem)]',
+        onclick: () => {
+          if (!hovered) return
+          window.dispatch({
+            type: MessageType.NAVIGATE,
+            msg: { screen: hovered }
+          })
+        }
+      },
+      `Select: ${hovered ?? '...'}`
+    )
   )
   // const actions = ctx.tvActions ?? [] // derived from TV
   // const hovered = ctx.hoveredId ?? null // derived from TV
