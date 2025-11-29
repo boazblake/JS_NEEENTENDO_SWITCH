@@ -8,7 +8,7 @@ export const view = (model, dispatch) => {
     'div',
     {
       class:
-        'flex flex-col items-center justify-center min-h-screen text-white bg-slate-900'
+        'flex flex-col items-center justify-center h-full  text-white bg-slate-900'
     },
 
     m('h1', { class: 'text-5xl mb-4' }, 'Select TV'),

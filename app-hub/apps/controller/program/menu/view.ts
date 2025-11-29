@@ -1,11 +1,29 @@
 import { m } from '@shared/mithril-lite'
 import type { ControllerMenuModel, ControllerCtx } from '../types'
 
+import { MessageType } from '@shared/types'
+
 export const view = (
   model: ControllerMenuModel,
   dispatch: any,
   ctx: ControllerCtx
 ) => {
+  const hovered = ctx.hoveredId
+  return m(
+    'button',
+    {
+      class:
+        'mx-4 mt-3 bg-blue-600 py-2 rounded text-lg active:scale-95 text-white w-[calc(100%-2rem)]',
+      onclick: () => {
+        if (!hovered) return
+        window.dispatch({
+          type: MessageType.NAVIGATE,
+          msg: { screen: hovered }
+        })
+      }
+    },
+    `Select: ${hovered ?? '...'}`
+  )
   // const actions = ctx.tvActions ?? [] // derived from TV
   // const hovered = ctx.hoveredId ?? null // derived from TV
   //

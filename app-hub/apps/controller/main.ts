@@ -5,8 +5,29 @@ import { program } from './program/index.js'
 import { runSocketStream } from '@effects/network'
 import { registerResizeIO } from '@effects/global'
 import { Motion } from '@boazblake/capacitor-motion'
+// Load Ionic
+;(async () => {
+  // Set the path to a variable to
+  // prevent Vite from analyzing in dev
+  const ionicPath = '/ionic.esm.js'
+  await import(/* @vite-ignore */ ionicPath)
+})()
 
-import '@ionic/core/css/ionic.bundle.css'
+// Core CSS required for Ionic components to work properly
+import '@ionic/core/css/core.css'
+
+// Basic CSS for apps built with Ionic
+import '@ionic/core/css/normalize.css'
+import '@ionic/core/css/structure.css'
+// import '@ionic/core/css/typography.css'
+
+// Optional CSS utils that can be commented out
+// import '@ionic/core/css/padding.css'
+// import '@ionic/core/css/float-elements.css'
+// import '@ionic/core/css/text-alignment.css'
+// import '@ionic/core/css/text-transformation.css'
+// import '@ionic/core/css/flex-utils.css'
+// import '@ionic/core/css/display.css'
 // import { Capacitor } from '@capacitor/core'
 // Capacitor.setLogLevel('warn')
 // 1. Open a WebSocket connection to your relay
@@ -40,7 +61,7 @@ const io = renderApp(renderer, env)(rootIO, program)
 
 // 7. Start runtime (dispatch comes from renderApp)
 const { dispatch } = io.run()
-
+window.dispatch = dispatch
 // 8. Start socket and global listeners
 runSocketStream(ws, dispatch, env)
 runDomIO(registerResizeIO(dispatch), env)

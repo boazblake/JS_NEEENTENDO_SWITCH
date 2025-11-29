@@ -1,13 +1,13 @@
 // controller/layout.ts
 import { m } from '@shared/mithril-lite'
-import { MessageType } from '@shared/types'
+import { MessageType, Screen } from '@shared/types'
 
 export const layout = (content: any, model: any, dispatch: any) => {
   const status = model.status ?? 'disconnected'
   const hovered = model.hoveredId ?? null
   const name = model.name || '…'
   const isConnected = status === 'connected'
-
+  console.log(model)
   const statusColor = (s) =>
     s === 'connected' ? '#184' : s === 'connecting' ? '#881' : '#888'
 
@@ -49,32 +49,31 @@ export const layout = (content: any, model: any, dispatch: any) => {
         )
       ),
 
-      isConnected
+      ![Screen.MENU, Screen.LOBBY].includes(model.screen)
         ? m(
             'button',
             {
               class:
                 'mx-4 mt-3 bg-blue-600 py-2 rounded text-lg active:scale-95 text-white w-[calc(100%-2rem)]',
               onclick: () => {
-                if (!hovered) return
                 dispatch({
                   type: MessageType.NAVIGATE,
-                  msg: { screen: hovered }
+                  msg: { screen: 'menu' }
                 })
               }
             },
-            `Select: ${hovered ?? '...'}`
+            `Back`
           )
         : null,
 
       m(
         'ion-content',
-        { fullscreen: true, class: 'bg-black text-white' },
-        m(
-          'div',
-          { class: 'w-full h-full overflow-y-auto', style: 'min-height:0;' },
-          content
-        )
+        {
+          fullscreen: true,
+          class: 'bg-black text-white w-full h-full overflow-y-auto',
+          style: 'min-height:100vh;'
+        },
+        content
       )
     )
   )

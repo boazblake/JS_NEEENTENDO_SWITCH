@@ -1,7 +1,11 @@
 import { defineConfig } from 'vite'
+import { viteStaticCopy } from 'vite-plugin-static-copy'
 import path from 'path'
 
 export default defineConfig({
+  optimizeDeps: {
+    exclude: ['@ionic/core']
+  },
   root: '.',
   cacheDir: '../../node_modules/.vite-controller',
   server: {
@@ -9,17 +13,33 @@ export default defineConfig({
     https: {
       key: path.resolve(__dirname, '../../certs/multi-ip-key.pem'),
       cert: path.resolve(__dirname, '../../certs/multi-ip.pem')
-    },
+    }
   },
   build: {
     outDir: '../dist/controller',
-    emptyOutDir: true
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: undefined
+      },
+      external: ['/ionic.esm.js']
+    }
   },
+  plugins: [
+    viteStaticCopy({
+      targets: [
+        {
+          src: '../../node_modules/@ionic/core/dist/ionic/*',
+          dest: ''
+        }
+      ]
+    })
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '../../'),
       '@effects': path.resolve(__dirname, '../../effects'),
-      '@shared': path.resolve(__dirname, '../../shared/src'),
+      '@shared': path.resolve(__dirname, '../../shared/src')
     }
   }
 })
