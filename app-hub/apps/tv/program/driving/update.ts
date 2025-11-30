@@ -18,27 +18,40 @@ export const update = (msg: any, model: Model, _dispatch: any, ctx: TVCtx) => {
       const cx = w / 2
       const cy = h / 2
 
-      // pointer → normalized inputs
-      const nx = (pointer.x - cx) / (w * 0.5) // left/right
-      const ny = (cy - pointer.y) / (h * 0.5) // forward/back
+      const nx = (pointer.x - cx) / (w * 0.5)
+      const ny = (pointer.y - cy) / (h * 0.5)
 
-      const steer = Math.max(-1, Math.min(1, nx))
-      const throttle = Math.max(0, ny)
-      const brake = Math.max(0, -ny)
+      const steerInput = Math.max(-1, Math.min(1, nx))
+      const throttle = Math.max(0, ny) // forward tilt (down) = positive ny = throttle
+      const brake = Math.max(0, -ny) // backward tilt (up) = negative ny = brake
 
       const dt = 1 / 60
+
       const car = { ...model.car }
 
-      car.angle += steer * 2.5 * dt
-      car.vel += throttle * 300 * dt
-      car.vel -= brake * 400 * dt
-      car.vel *= 0.98
+      // forward velocity
+      car.vel += throttle * 400 * dt
+      car.vel -= brake * 500 * dt
+      car.vel *= 0.985
 
-      if (car.vel > 900) car.vel = 900
-      if (car.vel < -300) car.vel = -300
+      const maxFwd = 1200
+      const maxRev = 0
+      if (car.vel > maxFwd) car.vel = maxFwd
+      if (car.vel < maxRev) car.vel = maxRev
 
-      car.x += Math.sin(car.angle) * car.vel * dt
-      car.y -= Math.cos(car.angle) * car.vel * dt
+      // update world position
+      car.z += car.vel * dt
+
+      // lateral movement from steer
+      const lateralSpeed = 400
+      car.x += steerInput * lateralSpeed * dt
+
+      // clamp lateral position
+      const roadHalfWidthWorld = 6 // world units each side
+      if (car.x < -roadHalfWidthWorld) car.x = -roadHalfWidthWorld
+      if (car.x > roadHalfWidthWorld) car.x = roadHalfWidthWorld
+
+      car.steer = steerInput
 
       const next: Model = { car }
 
