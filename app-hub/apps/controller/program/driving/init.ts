@@ -1,10 +1,7 @@
-// controller/menu/init.ts
 import { IO } from 'algebraic-js'
 import type { Model } from './types'
 
 export const init = IO<{ model: Model; effects: any[] }>(() => ({
-  model: {
-    items: []
-  },
+  model: { steer: 0, throttle: 0, brake: 0 },
   effects: []
 }))

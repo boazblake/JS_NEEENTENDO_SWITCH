@@ -8,7 +8,8 @@ export const init = IO<{ model: Model; effects: any[] }>(() => ({
       { id: 'calibration', label: 'Calibration', screen: 'calibration' },
       { id: 'spraycan', label: 'Spray Can', screen: 'spraycan' },
       { id: 'wordpond', label: 'Word Pond', screen: 'wordpond' },
-      { id: 'lobby', label: 'Back to Lobby', screen: 'lobby' }
+      { id: 'lobby', label: 'Back to Lobby', screen: 'lobby' },
+      { id: 'driving', label: 'drive!', screen: 'driving' }
     ]
   },
   effects: []

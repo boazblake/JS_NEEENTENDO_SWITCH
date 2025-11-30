@@ -9,6 +9,7 @@ import { program as Menu } from './menu'
 import { program as Calibration } from './calibration'
 import { program as Spray } from './spray-can'
 import { program as WordPond } from './word-pond'
+import { program as Driving } from './'
 import { startAutoCalibration } from './effects'
 
 const routeSubProgram = (
@@ -35,6 +36,10 @@ const routeSubProgram = (
     case 'spraycan': {
       const r = Spray.update(msg, model.spray, dispatch, ctx)
       return { model: { ...model, spray: r.model }, effects: r.effects }
+    }
+    case 'driving': {
+      const r = Driving.update(msg, model.driving, dispatch, ctx)
+      return { model: { ...model, driving: r.model }, effects: r.effects }
     }
     case 'wordpond': {
       const r = WordPond.update(msg, model.wordpond, dispatch, ctx)

@@ -12,6 +12,7 @@ import { program as Menu } from './menu'
 import { program as Calibration } from './calibration'
 import { program as Spray } from './spray-can'
 import { program as WordPond } from './word-pond'
+import { program as Driving } from './driving'
 
 export const view = (
   model: ControllerModel,
@@ -25,6 +26,15 @@ export const view = (
         model.menu,
         (type: string, data: any = {}) =>
           dispatch(createMsg(type, { ...data, screen: 'menu' })),
+        model
+      )
+      break
+
+    case 'driving':
+      content = Driving.view(
+        model.driving,
+        (type: string, data: any = {}) =>
+          dispatch(createMsg(type, { ...data, screen: 'driving' })),
         model
       )
       break

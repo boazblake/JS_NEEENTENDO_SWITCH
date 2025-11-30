@@ -7,6 +7,7 @@ import { init as menuInit } from './menu/init'
 import { init as calibrationInit } from './calibration/init'
 import { init as sprayInit } from './spray-can/init'
 import { init as wordPondInit } from './word-pond/init'
+import { init as drivingInit } from './driving/init'
 
 import { env } from '../main'
 
@@ -19,6 +20,7 @@ export const init = IO<{ model: ControllerModel; effects: any[] }>(() => {
   const calibration = calibrationInit.run().model
   const spray = sprayInit.run().model
   const wordpond = wordPondInit.run().model
+  const driving = drivingInit.run().model
 
   const model: ControllerModel = {
     id,
@@ -28,6 +30,7 @@ export const init = IO<{ model: ControllerModel; effects: any[] }>(() => {
     screen: 'lobby',
     hoveredId: null,
     lobby,
+    driving,
     menu,
     calibration,
     spray,

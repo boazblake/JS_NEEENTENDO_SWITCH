@@ -8,6 +8,7 @@ import { init as menuInit } from './menu/init'
 import { init as calibrationInit } from './calibration/init'
 import { init as sprayInit } from './spray-can/init'
 import { init as wordPondInit } from './word-pond/init'
+import { init as drivingInit } from './driving/init'
 
 export const init = IO<{ model: TVModel; effects: any[] }>(() => {
   const session = Math.random().toString(36).substring(2, 7).toUpperCase()
@@ -17,6 +18,7 @@ export const init = IO<{ model: TVModel; effects: any[] }>(() => {
   const calibration = calibrationInit.run().model
   const spray = sprayInit.run().model
   const wordpond = wordPondInit.run().model
+  const driving = drivingInit.run().model
 
   const model: TVModel = {
     session,
@@ -33,6 +35,7 @@ export const init = IO<{ model: TVModel; effects: any[] }>(() => {
     menu,
     calibration,
     spray,
+    driving,
     wordpond
   }
 

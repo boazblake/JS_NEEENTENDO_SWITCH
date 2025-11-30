@@ -9,6 +9,7 @@ import { program as Menu } from './menu'
 import { program as Calibration } from './calibration'
 import { program as Spray } from './spray-can'
 import { program as WordPond } from './word-pond'
+import { program as Driving } from './driving'
 
 const routeSubProgram = (
   payload: Payload,
@@ -38,6 +39,10 @@ const routeSubProgram = (
     case 'wordpond': {
       const r = WordPond.update(payload, model.wordpond, dispatch, ctx)
       return { model: { ...model, wordpond: r.model }, effects: r.effects }
+    }
+    case 'driving': {
+      const r = Driving.update(payload, model.driving, dispatch, ctx)
+      return { model: { ...model, driving: r.model }, effects: r.effects }
     }
     default:
       return { model, effects: [] }
@@ -129,18 +134,41 @@ export const update = (
         )
       }
 
+      const nextControllers = {
+        ...model.controllers,
+        [id]: {
+          ...controller,
+          pointer: { ...pointer, x: xs, y: ys, hoveredId }
+        }
+      }
+
+      // base model with updated controllers
+      let nextModel: TVModel = {
+        ...model,
+        controllers: nextControllers
+      }
+      let nextEffects = effects
+
+      // Driving: forward synthetic CALIB_UPDATE into Driving.update when driving screen is active
+      if (model.screen === 'driving') {
+        const ctx: TVCtx = nextModel
+        const r = Driving.update(
+          { type: 'CALIB_UPDATE', msg: payload.msg },
+          model.driving,
+          dispatch,
+          ctx
+        )
+
+        nextModel = {
+          ...nextModel,
+          driving: r.model
+        }
+        nextEffects = [...nextEffects, ...r.effects]
+      }
+
       return {
-        model: {
-          ...model,
-          controllers: {
-            ...model.controllers,
-            [id]: {
-              ...controller,
-              pointer: { ...pointer, x: xs, y: ys, hoveredId }
-            }
-          }
-        },
-        effects
+        model: nextModel,
+        effects: nextEffects
       }
     }
 
@@ -180,20 +208,11 @@ export const update = (
       }
     }
 
-    case 'TICK': {
-      if (model.screen === 'wordpond') {
-        const ctx: TVCtx = model
-        const r = WordPond.update(payload, model.wordpond, dispatch, ctx)
-        return { model: { ...model, wordpond: r.model }, effects: r.effects }
-      }
-      return { model, effects: [] }
-    }
-
-    case 'INTERNAL_SPRAY_TICK':
-    case MessageType.SPRAY_START: {
-      const ctx: TVCtx = model
-      const r = Spray.update(payload, model.spray, dispatch, ctx)
-      return { model: { ...model, spray: r.model }, effects: r.effects }
+    case 'DRIVING_READY': {
+      console.log('driving')
+      const ctx = model
+      const r = Driving.update(payload, model.driving, dispatch, ctx)
+      return { model: { ...model, driving: r.model }, effects: r.effects }
     }
 
     case MessageType.SPRAY_POINT: {

@@ -6,6 +6,7 @@ import { program as Menu } from './menu'
 import { program as Calibration } from './calibration'
 import { program as Spray } from './spray-can'
 import { program as WordPond } from './word-pond'
+import { program as Driving } from './driving/'
 
 export const view = (model: TVModel, dispatch: any) => {
   const ctx: TVCtx = model
@@ -23,6 +24,9 @@ export const view = (model: TVModel, dispatch: any) => {
       break
     case 'wordpond':
       content = WordPond.view(model.wordpond, dispatch, ctx)
+      break
+    case 'driving':
+      content = Driving.view(model.driving, dispatch, ctx)
       break
     case 'lobby':
     default:
