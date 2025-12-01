@@ -40,7 +40,7 @@ export const layout = (
             top: 0;
             transform: translate(${c.pointer.x}px, ${c.pointer.y}px);
             background:${COLORS[idx].hex};
-            opacity: 1;
+            opacity: ${['pacman', 'driving'].includes(model.screen) ? 0.2 : 1};
             mix-blend-mode: normal;
             filter: none;
             z-index: 999999;

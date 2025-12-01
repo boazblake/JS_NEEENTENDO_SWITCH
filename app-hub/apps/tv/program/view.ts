@@ -7,6 +7,7 @@ import { program as Calibration } from './calibration'
 import { program as Spray } from './spray-can'
 import { program as WordPond } from './word-pond'
 import { program as Driving } from './driving/'
+import { program as PacMan } from './pac-man/'
 
 export const view = (model: TVModel, dispatch: any) => {
   const ctx: TVCtx = model
@@ -24,6 +25,9 @@ export const view = (model: TVModel, dispatch: any) => {
       break
     case 'wordpond':
       content = WordPond.view(model.wordpond, dispatch, ctx)
+      break
+    case 'pacman':
+      content = PacMan.view(model.pacman, dispatch, ctx)
       break
     case 'driving':
       content = Driving.view(model.driving, dispatch, ctx)

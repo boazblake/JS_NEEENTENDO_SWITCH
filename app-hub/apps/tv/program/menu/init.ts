@@ -9,6 +9,7 @@ export const init = IO<{ model: Model; effects: any[] }>(() => ({
       { id: 'spraycan', label: 'Spray Can', screen: 'spraycan' },
       { id: 'wordpond', label: 'Word Pond', screen: 'wordpond' },
       { id: 'lobby', label: 'Back to Lobby', screen: 'lobby' },
+      { id: 'pacman', label: 'pacman', screen: 'pacman' },
       { id: 'driving', label: 'drive!', screen: 'driving' }
     ]
   },

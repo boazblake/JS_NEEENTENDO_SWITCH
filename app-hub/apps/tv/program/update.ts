@@ -9,6 +9,7 @@ import { program as Menu } from './menu'
 import { program as Calibration } from './calibration'
 import { program as Spray } from './spray-can'
 import { program as WordPond } from './word-pond'
+import { program as PacMan } from './pac-man'
 import { program as Driving } from './driving'
 
 const routeSubProgram = (
@@ -43,6 +44,10 @@ const routeSubProgram = (
     case 'driving': {
       const r = Driving.update(payload, model.driving, dispatch, ctx)
       return { model: { ...model, driving: r.model }, effects: r.effects }
+    }
+    case 'pacman': {
+      const r = PacMan.update(payload, model.pacman, dispatch, ctx)
+      return { model: { ...model, pacman: r.model }, effects: r.effects }
     }
     default:
       return { model, effects: [] }
@@ -162,6 +167,22 @@ export const update = (
         nextModel = {
           ...nextModel,
           driving: r.model
+        }
+        nextEffects = [...nextEffects, ...r.effects]
+      }
+      // Pacman: forward synthetic CALIB_UPDATE into Pacman.update when pacman screen is active
+      if (model.screen === 'pacman') {
+        const ctx: TVCtx = nextModel
+        const r = PacMan.update(
+          { type: 'CALIB_UPDATE', msg: payload.msg },
+          nextModel.pacman,
+          dispatch,
+          ctx
+        )
+        console.log('PACMAN', r.model)
+        nextModel = {
+          ...nextModel,
+          pacman: r.model
         }
         nextEffects = [...nextEffects, ...r.effects]
       }

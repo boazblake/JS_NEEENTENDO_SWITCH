@@ -8,6 +8,7 @@ import { init as calibrationInit } from './calibration/init'
 import { init as sprayInit } from './spray-can/init'
 import { init as wordPondInit } from './word-pond/init'
 import { init as drivingInit } from './driving/init'
+import { init as pacmanInit } from './pac-man/init'
 
 import { env } from '../main'
 
@@ -21,6 +22,7 @@ export const init = IO<{ model: ControllerModel; effects: any[] }>(() => {
   const spray = sprayInit.run().model
   const wordpond = wordPondInit.run().model
   const driving = drivingInit.run().model
+  const pacman = pacmanInit.run().model
 
   const model: ControllerModel = {
     id,
@@ -34,6 +36,7 @@ export const init = IO<{ model: ControllerModel; effects: any[] }>(() => {
     menu,
     calibration,
     spray,
+    pacman,
     wordpond
   }
 

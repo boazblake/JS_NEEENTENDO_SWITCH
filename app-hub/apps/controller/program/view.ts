@@ -13,6 +13,7 @@ import { program as Calibration } from './calibration'
 import { program as Spray } from './spray-can'
 import { program as WordPond } from './word-pond'
 import { program as Driving } from './driving'
+import { program as PacMan } from './pac-man'
 
 export const view = (
   model: ControllerModel,
@@ -56,7 +57,14 @@ export const view = (
         model
       )
       break
-
+    case 'pacman':
+      content = PacMan.view(
+        model.pacman,
+        (type: string, data: any = {}) =>
+          dispatch(createMsg(type, { ...data, screen: 'pacman' })),
+        model
+      )
+      break
     case 'wordpond':
       content = WordPond.view(
         model.wordpond,

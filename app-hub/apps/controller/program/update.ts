@@ -9,7 +9,8 @@ import { program as Menu } from './menu'
 import { program as Calibration } from './calibration'
 import { program as Spray } from './spray-can'
 import { program as WordPond } from './word-pond'
-import { program as Driving } from './'
+import { program as Driving } from './driving'
+import { program as PacMan } from './pac-man'
 import { startAutoCalibration } from './effects'
 
 const routeSubProgram = (
@@ -41,6 +42,11 @@ const routeSubProgram = (
       const r = Driving.update(msg, model.driving, dispatch, ctx)
       return { model: { ...model, driving: r.model }, effects: r.effects }
     }
+
+    case 'pacman': {
+      const r = PacMan.update(msg, model.pacman, dispatch, ctx)
+      return { model: { ...model, pacman: r.model }, effects: r.effects }
+    }
     case 'wordpond': {
       const r = WordPond.update(msg, model.wordpond, dispatch, ctx)
       return { model: { ...model, wordpond: r.model }, effects: r.effects }
@@ -64,6 +70,9 @@ export const update = (
         effects
       }
     }
+
+    case 'PACMAN_SET_DIR':
+      return { model: { ...model, dir: msg.msg.dir }, effects: [] }
 
     case MessageType.TV_LIST:
       return routeSubProgram(payload, model, dispatch)
