@@ -1,4 +1,4 @@
-import { Stream, Reader, IO, type DomEnv, type Dispatch } from 'algebraic-js'
+import { Stream, Reader, IO, type DomEnv, type Dispatch } from 'algebraic-fx'
 import { MessageType, NetworkMessage, type Payload } from '@/shared/types.js'
 /**
  * Creates a periodic IO that sends the current model to all clients.

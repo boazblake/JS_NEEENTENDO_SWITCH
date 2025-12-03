@@ -1,4 +1,4 @@
-import { IO, askDocument, browserEnv, runDomIO, renderApp } from 'algebraic-js'
+import { IO, askDocument, browserEnv, runDomIO, renderApp } from 'algebraic-fx'
 import { renderer } from '@shared/renderer'
 import './main.css'
 import { program } from './program/index.js'

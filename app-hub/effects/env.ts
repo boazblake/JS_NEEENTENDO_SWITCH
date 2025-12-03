@@ -1,1 +1,1 @@
-import type { DomEnv } from 'algebraic-js/core/dom.js'
+import type { DomEnv } from 'algebraic-fx/core/dom.js'

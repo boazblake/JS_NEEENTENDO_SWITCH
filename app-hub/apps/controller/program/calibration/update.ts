@@ -1,4 +1,4 @@
-import { IO, Dispatch, runDomIO } from 'algebraic-js'
+import { IO, Dispatch, runDomIO } from 'algebraic-fx'
 import { startMotion } from './effects.js'
 import { sendMsg } from '@effects/network'
 import { MessageType, Screen } from '@shared/types'
@@ -12,8 +12,8 @@ export const update = (msg: Msg, model: Model, dispatch: Dispatch) => {
       return { model, effects: [startMotion(dispatch)] }
 
     case 'MOTION_EVENT': {
-      const { quaternion, gravity } = msg
-      const next = { ...model, quaternion, gravity }
+      const { quaternion, gravity, rotation, timestamp } = msg
+      const next = { ...model, quaternion, gravity, rotation, timestamp }
       const { session, id } = env
       // child wraps outbound calibration data for its parent
       const screenOut = IO(() =>
@@ -24,7 +24,9 @@ export const update = (msg: Msg, model: Model, dispatch: Dispatch) => {
             type: MessageType.CALIB_UPDATE,
             msg: {
               gravity,
-              quaternion
+              quaternion,
+              rotation,
+              timestamp
             }
           })
         )

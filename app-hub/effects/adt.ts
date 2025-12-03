@@ -1,4 +1,4 @@
-import { IO } from 'algebraic-js'
+import { IO } from 'algebraic-fx'
 
 /* --------------------------------------------
    Base algebraic effects

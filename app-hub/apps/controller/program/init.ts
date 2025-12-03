@@ -1,5 +1,5 @@
 // controller/init.ts
-import { IO } from 'algebraic-js'
+import { IO } from 'algebraic-fx'
 import type { ControllerModel } from './types'
 
 import { init as lobbyInit } from './lobby/init'

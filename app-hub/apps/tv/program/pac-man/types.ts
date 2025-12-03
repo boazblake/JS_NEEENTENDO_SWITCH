@@ -1,16 +1,6 @@
 // tv/pac-man/types.ts
 
-import type { MAP } from './map'
-
 export type Tile = 0 | 1 | 2
-
-export type Player = {
-  x: number
-  y: number
-  dx: number
-  dy: number
-  isInvulnerable: boolean
-}
 
 export type EnemyAI = 'chase' | 'ambush' | 'flank' | 'random'
 
@@ -24,9 +14,12 @@ export type Enemy = {
   ai: EnemyAI
 }
 
-export type Token = {
+export type Player = {
   x: number
   y: number
+  dx: number
+  dy: number
+  isInvulnerable: boolean
 }
 
 export type PowerUp = {
@@ -34,8 +27,13 @@ export type PowerUp = {
   y: number
 }
 
-export type PacmanModel = {
-  map: typeof MAP
+export type Token = {
+  x: number
+  y: number
+}
+
+export type PacManModel = {
+  map: Tile[][]
   player: Player | null
   enemies: Enemy[]
   tokens: Token[]
@@ -46,14 +44,19 @@ export type PacmanModel = {
   powerUpTimer: number
   frameCount: number
   gameReady: boolean
-  initialized: boolean
+  gameEnded: boolean
 }
 
-export type CalibMsg = {
+export type CalibUpdateMsg = {
   id: string
-  g?: number[]
+  g?: [number, number, number] | number[]
 }
 
-export type PacmanPayload =
-  | { type: 'CALIB_UPDATE'; msg: CalibMsg }
-  | { type: 'TICK' }
+export type Payload =
+  | { type: 'CALIB_UPDATE'; msg: CalibUpdateMsg }
+  | { type: 'PACMAN_RESTART' }
+
+// TV model is assumed to hold `pacman: PacManModel`
+export type TVModelWithPacMan = {
+  pacman: PacManModel
+}

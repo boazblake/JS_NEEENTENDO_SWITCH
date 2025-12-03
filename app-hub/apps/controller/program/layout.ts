@@ -48,7 +48,22 @@ export const layout = (content: any, model: any, dispatch: any) => {
           )
         )
       ),
-
+      Screen.LOBBY
+        ? null
+        : m(
+            'ion-button',
+            {
+              class:
+                'mx-4 mt-3 bg-blue-600 py-2 rounded text-lg active:scale-95 text-white w-[calc(100%-2rem)]',
+              onclick: () => {
+                dispatch({
+                  type: MessageType.NAVIGATE,
+                  msg: { screen: 'lobby' }
+                })
+              }
+            },
+            `Lobby`
+          ),
       ![Screen.MENU, Screen.LOBBY].includes(model.screen)
         ? m(
             'ion-button',

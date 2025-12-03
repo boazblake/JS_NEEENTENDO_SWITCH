@@ -28,6 +28,7 @@
           shellHook = ''
             export NODE_ENV=development
             export PATH="$PWD/node_modules/.bin:$PATH"
+            export PATH=$PATH:$HOME/.gem/ruby/*/bin
             echo "Edu Games dev shell ready"
           '';
         };

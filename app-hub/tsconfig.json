@@ -12,28 +12,13 @@
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
     "outDir": "dist",
-    "types": [
-      "vite/client"
-    ],
+    "types": ["vite/client"],
     "baseUrl": ".",
     "paths": {
-      "@/shared": [
-        "shared/*"
-      ],
-      "@/effects": [
-        "effects/*"
-      ]
+      "@/shared": ["shared/*"],
+      "@/effects": ["effects/*"]
     }
   },
-  "include": [
-    "core",
-    "server",
-    "shared",
-    "apps",
-    "vite.config.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "include": ["core", "server", "shared", "apps", "vite.config.ts"],
+  "exclude": ["node_modules", "dist"]
 }

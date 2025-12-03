@@ -1,4 +1,4 @@
-import { IO } from 'algebraic-js'
+import { IO } from 'algebraic-fx'
 
 // shared/orientation.ts
 // Quaternion-based pointer mapping using device's forward direction.

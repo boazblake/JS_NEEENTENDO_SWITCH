@@ -1,5 +1,5 @@
 // controller/update.ts
-import type { Dispatch } from 'algebraic-js'
+import type { Dispatch } from 'algebraic-fx'
 import type { ControllerModel, ControllerCtx } from './types'
 import { sendMsg } from '@effects/network'
 import { MessageType, type Payload, WordPondMsg } from '@shared/types'
@@ -98,10 +98,7 @@ export const update = (
     }
 
     case MessageType.SCREEN_SELECTED:
-      return {
-        model: { ...model, screen: payload.msg.screen },
-        effects: []
-      }
+      return routeSubProgram(payload, model, dispatch)
 
     case MessageType.NAVIGATE: {
       const screen = payload.msg.screen as ControllerModel['screen']

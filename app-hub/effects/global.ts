@@ -1,4 +1,4 @@
-import { Stream, Reader, IO, type DomEnv } from 'algebraic-js'
+import { Stream, Reader, IO, type DomEnv } from 'algebraic-fx'
 import type { Msg } from '../types.js'
 import { sendIO } from './network.ts'
 

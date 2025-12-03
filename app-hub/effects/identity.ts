@@ -7,7 +7,7 @@ import {
   sessionSet,
   runDomIO,
   browserEnv
-} from 'algebraic-js'
+} from 'algebraic-fx'
 
 /**
  * Pure identity generator for this device.

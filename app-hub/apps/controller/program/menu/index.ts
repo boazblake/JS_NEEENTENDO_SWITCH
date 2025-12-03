@@ -1,4 +1,4 @@
-import type { Program } from 'algebraic-js '
+import type { Program } from 'algebraic-fx'
 import { init } from './init.js'
 import { update } from './update.js'
 import { view } from './view.js'

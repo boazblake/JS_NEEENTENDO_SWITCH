@@ -1,5 +1,5 @@
-import { IO, type Dispatch } from 'algebraic-js'
-import { Motion } from '@boazblake/capacitor-motion'
+import { IO, type Dispatch } from 'algebraic-fx'
+import { Motion } from 'capacitor-native-motion'
 import { MessageType, Screen } from '@shared/types'
 
 const clamp = (v: number, min: number, max: number) =>
@@ -17,13 +17,14 @@ export const startMotion = (dispatch: Dispatch) =>
 
       const sub = await Motion.addListener(
         'motion',
-        ({ quaternion, gravity }) => {
+        ({ quaternion, gravity, rotation }) => {
           dispatch({
             type: Screen.CALIBRATION,
             msg: {
               type: 'MOTION_EVENT',
               quaternion,
-              gravity
+              gravity,
+              rotation
             }
           })
         }

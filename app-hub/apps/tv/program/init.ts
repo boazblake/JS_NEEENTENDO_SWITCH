@@ -1,4 +1,4 @@
-import { IO } from 'algebraic-js'
+import { IO } from 'algebraic-fx'
 import { sendMsg, broadcastState } from '@effects/network'
 import { MessageType } from '@shared/types'
 import type { TVModel } from './types'

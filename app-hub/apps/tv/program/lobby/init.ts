@@ -1,4 +1,4 @@
-import { IO } from 'algebraic-js'
+import { IO } from 'algebraic-fx'
 import type { Model } from './types.js'
 import { Screen } from '@shared/types'
 

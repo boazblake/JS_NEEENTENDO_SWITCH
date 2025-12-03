@@ -1,5 +1,5 @@
 import type { Model } from './types.js'
-import type { Dispatch } from 'algebraic-js'
+import type { Dispatch } from 'algebraic-fx'
 import type { Payload } from '@shared/types'
 import { MessageType } from '@shared/types'
 

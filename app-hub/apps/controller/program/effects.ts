@@ -1,5 +1,5 @@
-import { IO, Reader, type Dispatch } from 'algebraic-js'
-import { Motion } from '@boazblake/capacitor-motion'
+import { IO, Reader, type Dispatch } from 'algebraic-fx'
+import { Motion } from 'capacitor-native-motion'
 import { MessageType } from '@shared/types'
 import { sendMsg } from '@effects/network'
 
@@ -22,10 +22,10 @@ export const startAutoCalibration = (
 
         const sub = await Motion.addListener(
           'motion',
-          ({ quaternion, gravity }) => {
+          ({ quaternion, gravity, rotationRate }) => {
             const payload = {
               type: MessageType.CALIB_UPDATE,
-              msg: { session, id, q: quaternion, g: gravity },
+              msg: { session, id, q: quaternion, g: gravity, r: rotationRate },
               t: Date.now()
             }
 

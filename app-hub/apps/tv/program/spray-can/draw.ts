@@ -1,5 +1,5 @@
 // tv/spray-can/draw.ts
-import { IO } from 'algebraic-js'
+import { IO } from 'algebraic-fx'
 import type { Model } from './types'
 
 export const drawSprayIO = (spray: Model) =>

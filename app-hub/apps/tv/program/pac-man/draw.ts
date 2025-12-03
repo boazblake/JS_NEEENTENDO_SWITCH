@@ -1,5 +1,5 @@
 // tv/pac-man/draw.ts
-import { IO } from 'algebraic-js'
+import { IO } from 'algebraic-fx'
 import type { Model, Direction } from './types'
 import { isWall } from './maze'
 

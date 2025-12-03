@@ -29,7 +29,7 @@ export default defineConfig({
     viteStaticCopy({
       targets: [
         {
-          src: '../../node_modules/@ionic/core/dist/ionic/*',
+          src: './node_modules/@ionic/core/dist/ionic/*',
           dest: ''
         }
       ]

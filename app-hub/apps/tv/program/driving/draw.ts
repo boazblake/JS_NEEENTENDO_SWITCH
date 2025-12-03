@@ -1,5 +1,5 @@
 // draw.ts — TRUE SNES Mode 7 (perspective-correct, no hacks)
-import { IO } from 'algebraic-js'
+import { IO } from 'algebraic-fx'
 import type { Model } from './types'
 
 export const drawDrivingIO = (model: Model) =>

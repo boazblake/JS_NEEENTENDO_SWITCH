@@ -1,5 +1,5 @@
 import { m } from '@shared/mithril-lite'
-import type { Dispatch } from 'algebraic-js'
+import type { Dispatch } from 'algebraic-fx'
 import type { Model } from './types.js'
 
 /**
@@ -12,11 +12,13 @@ const fmt = (v: number, n = 2) => (Number.isFinite(v) ? v.toFixed(n) : '0.00')
  */
 const getLatest = (m: Model) => ({
   gravity: m.gravity ?? [0, 0, 0],
-  quaternion: m.quaternion ?? [0, 0, 0, 1]
+  quaternion: m.quaternion ?? [0, 0, 0, 1],
+  rotation: m.rotation ?? [0, 0, 0],
+  timestamp: m.timestamp
 })
 
 export const view = (model: Model, dispatch: Dispatch) => {
-  const { gravity, quaternion } = getLatest(model)
+  const { gravity, quaternion, rotation } = getLatest(model)
 
   return m(
     'div',
@@ -64,6 +66,14 @@ export const view = (model: Model, dispatch: Dispatch) => {
         `quat: [ ${fmt(quaternion[0])}, ${fmt(quaternion[1])}, ${fmt(
           quaternion[2]
         )}, ${fmt(quaternion[3])} ]`
+      ),
+
+      m(
+        'p',
+        { class: 'text-emerald-400 font-mono text-sm mt-2' },
+        `quat: [ ${fmt(rotation[0])}, ${fmt(rotation[1])}, ${fmt(
+          rotation[2]
+        )} ]`
       )
     ),
 
@@ -72,7 +82,7 @@ export const view = (model: Model, dispatch: Dispatch) => {
       {
         class: 'text-xs text-slate-500 mt-6 font-mono whitespace-pre-wrap'
       },
-      JSON.stringify({ gravity, quaternion }, null, 2)
+      JSON.stringify({ gravity, quaternion, rotation }, null, 2)
     )
   )
 }

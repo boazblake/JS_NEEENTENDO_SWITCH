@@ -1,4 +1,4 @@
-import type { Dispatch } from 'algebraic-js'
+import type { Dispatch } from 'algebraic-fx'
 import type { TVModel, TVCtx } from './types'
 import { MessageType, type Payload, WordPondMsg } from '@shared/types'
 import { sendMsg } from '@effects/network'
@@ -173,16 +173,25 @@ export const update = (
       // Pacman: forward synthetic CALIB_UPDATE into Pacman.update when pacman screen is active
       if (model.screen === 'pacman') {
         const ctx: TVCtx = nextModel
-        const r = PacMan.update(
-          { type: 'CALIB_UPDATE', msg: payload.msg },
-          nextModel.pacman,
-          dispatch,
-          ctx
-        )
-        console.log('PACMAN', r.model)
+        const r = PacMan.update(payload, nextModel.pacman, dispatch, ctx)
         nextModel = {
           ...nextModel,
           pacman: r.model
+        }
+        nextEffects = [...nextEffects, ...r.effects]
+      }
+      if (model.screen === 'calibration') {
+        console.log('model', model, payload)
+        const ctx: TVCtx = nextModel
+        const r = Calibration.update(
+          payload,
+          nextModel.calibration,
+          dispatch,
+          ctx
+        )
+        nextModel = {
+          ...nextModel,
+          calibration: r.model
         }
         nextEffects = [...nextEffects, ...r.effects]
       }

@@ -1,10 +1,10 @@
-import { IO, askDocument, browserEnv, runDomIO, renderApp } from 'algebraic-js'
+import { IO, askDocument, browserEnv, runDomIO, renderApp } from 'algebraic-fx'
 import { renderer } from '@shared/renderer'
 import './main.css'
 import { program } from './program/index.js'
 import { runSocketStream } from '@effects/network'
 import { registerResizeIO } from '@effects/global'
-import { Motion } from '@boazblake/capacitor-motion'
+import { Motion } from 'capacitor-native-motion'
 // Load Ionic
 ;(async () => {
   // Set the path to a variable to

@@ -1,6 +1,6 @@
 import type { Model } from './types.js'
 import { MessageType } from '@shared/types'
-import type { Dispatch } from 'algebraic-js'
+import type { Dispatch } from 'algebraic-fx'
 import { m } from '@shared/mithril-lite'
 
 export const view = (model, dispatch) => {
