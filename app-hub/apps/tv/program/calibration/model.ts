@@ -126,7 +126,7 @@ const getRoll = (gravity: number[]) => {
 }
 
 // ----------------------------------------------------------------------
-// DRAWING FUNCTION (Updated to draw inner screen)
+// DRAWING FUNCTION (Updated to draw inner screen and features)
 // ----------------------------------------------------------------------
 export const drawControllerReaderIO = (
   quaternion: number[],
@@ -153,7 +153,7 @@ export const drawControllerReaderIO = (
         string
       ]
 
-      // --- NEW: Calculate the inner screen polygon points ---
+      // --- Calculate the inner screen polygon points ---
       // Inner points (Width 260, Height 540). It must be slightly closer in Z to look right.
       const screenPts3D: [number, number, number][] = [
         [-130, -270, -49], // Z=-49 is slightly forward of Z=-50
@@ -167,6 +167,33 @@ export const drawControllerReaderIO = (
         height,
         screenPts3D
       )
+
+      // --- NEW: Top Camera/Notch Indicator points (small square near the top edge) ---
+      const notchPts3D: [number, number, number][] = [
+        [-30, -290, -48], // Wider area, slightly closer to the viewer
+        [30, -290, -48],
+        [30, -260, -48],
+        [-30, -260, -48]
+      ]
+      const notchPoly = _getProjectedPolygon(
+        quaternion,
+        width,
+        height,
+        notchPts3D
+      )
+
+      // --- NEW: Forward Vector Dot Point (Center of the screen, slightly in front) ---
+      // We only need one point for the center dot
+      const forwardDot3D: [number, number, number][] = [
+        [0, 0, -30] // X=0, Y=0, Z=-30 (Z is closer to the viewer than the screen at -49)
+      ]
+      const forwardDotPoly = _getProjectedPolygon(
+        quaternion,
+        width,
+        height,
+        forwardDot3D
+      )
+      const [dotX, dotY] = forwardDotPoly[0]
 
       // Destructure and calculate angular speed magnitude
       const [alpha, beta, gamma] = rotation
@@ -214,6 +241,23 @@ export const drawControllerReaderIO = (
 
       // Dark screen fill
       ctx.fillStyle = '#111827' // Dark Slate Gray/Black
+      ctx.fill()
+
+      // 3. Draw TOP INDICATOR (Notch/Camera)
+      ctx.beginPath()
+      ctx.moveTo(notchPoly[0][0], notchPoly[0][1])
+      for (let i = 1; i < notchPoly.length; i++)
+        ctx.lineTo(notchPoly[i][0], notchPoly[i][1])
+      ctx.closePath()
+      ctx.fillStyle = '#48bb78' // Bright green for visibility
+      ctx.fill()
+
+      // 4. Draw FORWARD VECTOR DOT
+      ctx.beginPath()
+      // Arc drawn at the projected point of the forward dot
+      ctx.arc(dotX, dotY, 10, 0, Math.PI * 2)
+      ctx.closePath()
+      ctx.fillStyle = 'white'
       ctx.fill()
 
       // --- Debug Text ---
