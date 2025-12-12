@@ -1,4 +1,5 @@
 node_modules/
+app-hub/certs/*.cnf
 dist
 .vscode
 .DS_Store

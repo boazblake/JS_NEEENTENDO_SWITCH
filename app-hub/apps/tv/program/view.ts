@@ -1,5 +1,5 @@
 import { layout } from './layout'
-import type { TVModel, TVCtx } from './types'
+import type { TVModel, TVContext, TVMsg } from './types'
 import { program as Lobby } from './lobby'
 import { program as Menu } from './menu'
 import { program as Calibration } from './calibration'
@@ -8,29 +8,55 @@ import { program as WordPond } from './word-pond'
 import { program as Driving } from './driving/'
 import { program as PacMan } from './pac-man/'
 
-export const view = (model: TVModel, dispatch: any) => {
-  const ctx: TVCtx = model
+export const view = (model: TVModel, dispatch: (msg: TVMsg) => void) => {
+  const ctx: TVContext = {
+    session: model.session,
+    screenW: model.screenW,
+    screenH: model.screenH,
+    controllers: model.controllers,
+    actions: model.actions,
+    players: model.players
+  }
+
   let content
 
   switch (model.screen) {
     case 'menu':
-      content = Menu.view(model.menu, dispatch, ctx)
+      content = model.menu
+        ? Menu.view(model.menu, dispatch, ctx)
+        : Lobby.view(model.lobby, dispatch, ctx)
       break
+
     case 'calibration':
-      content = Calibration.view(model.calibration, dispatch, ctx)
+      content = model.calibration
+        ? Calibration.view(model.calibration, dispatch, ctx)
+        : Lobby.view(model.lobby, dispatch, ctx)
       break
+
     case 'spraycan':
-      content = Spray.view(model.spray, dispatch, ctx)
+      content = model.spray
+        ? Spray.view(model.spray, dispatch, ctx)
+        : Lobby.view(model.lobby, dispatch, ctx)
       break
+
     case 'wordpond':
-      content = WordPond.view(model.wordpond, dispatch, ctx)
+      content = model.wordpond
+        ? WordPond.view(model.wordpond, dispatch, ctx)
+        : Lobby.view(model.lobby, dispatch, ctx)
       break
+
     case 'pacman':
-      content = PacMan.view(model.pacman, dispatch, ctx)
+      content = model.pacman
+        ? PacMan.view(model.pacman, dispatch, ctx)
+        : Lobby.view(model.lobby, dispatch, ctx)
       break
+
     case 'driving':
-      content = Driving.view(model.driving, dispatch, ctx)
+      content = model.driving
+        ? Driving.view(model.driving, dispatch, ctx)
+        : Lobby.view(model.lobby, dispatch, ctx)
       break
+
     case 'lobby':
     default:
       content = Lobby.view(model.lobby, dispatch, ctx)

@@ -6,6 +6,7 @@ import {
   readArrayBufferText
 } from '@/effects/network'
 import type { TVEnv } from '../program/env'
+import type { TVEnv } from '../program/env'
 import type { TVMsg } from '../program/types'
 
 export const socketEffect: Effect<TVEnv, TVMsg> = {

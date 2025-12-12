@@ -1,19 +1,19 @@
 import { m } from 'algebraic-fx'
-import { Screen, COLORS } from '@shared/types'
+import { MessageType, Screen, COLORS } from '@shared/types'
+import type { TVModel, TVMsg } from './types'
 
 export const layout = (
   content: any,
-  model: any,
-  dispatch: (m: any) => void
+  model: TVModel,
+  dispatch: (m: TVMsg) => void
 ) => {
   const showBack =
-    model.screen === 'menu' ||
-    model.screen === 'calibration' ||
-    model.screen === 'spraycan'
+    model.screen === Screen.MENU ||
+    model.screen === Screen.CALIBRATION ||
+    model.screen === Screen.SPRAYCAN
 
-  // derive hover state across all controllers
   const anyHoverMenu = Object.values(model.controllers).some(
-    (c: any) => c.pointer?.hoveredId === 'menu'
+    (c) => c.pointer?.hoveredId === 'menu'
   )
 
   return m(
@@ -23,7 +23,6 @@ export const layout = (
         'relative min-h-screen w-full flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white'
     },
 
-    // pointer container
     m(
       'div',
       {
@@ -31,8 +30,8 @@ export const layout = (
           'relative w-full h-full bg-gradient-to-b from-slate-900 to-slate-800 overflow-hidden'
       },
 
-      ...Object.values(model.controllers).map((c: any, idx: number) => {
-        return m('div', {
+      ...Object.values(model.controllers).map((c, idx) =>
+        m('div', {
           class:
             'fixed w-6 h-6 rounded-full pointer-events-none shadow-lg border-2 border-white',
           style: `
@@ -47,10 +46,9 @@ export const layout = (
             will-change: transform;
           `
         })
-      })
+      )
     ),
 
-    // main content wrapper
     m(
       'div',
       {
@@ -59,7 +57,6 @@ export const layout = (
       content
     ),
 
-    // back button
     showBack
       ? m(
           'button',
@@ -71,7 +68,10 @@ export const layout = (
                 : 'outline-none ') +
               'mt-6 px-8 py-4 rounded-lg bg-gradient-to-r from-pink-500 to-rose-600 text-lg font-semibold shadow-lg hover:scale-105 transition',
             onclick: () =>
-              dispatch({ type: 'NAVIGATE', msg: { to: Screen.MENU } })
+              dispatch({
+                type: MessageType.NAVIGATE,
+                msg: { screen: Screen.MENU, session: model.session }
+              })
           },
           '← Back'
         )

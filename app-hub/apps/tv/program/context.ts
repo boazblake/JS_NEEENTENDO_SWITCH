@@ -1,6 +1,6 @@
-import type { Model, TVContext } from './types'
+import type { TVModel, TVContext } from './types'
 
-export const makeTVContext = (model: Model): TVContext => ({
+export const makeTVContext = (model: TVModel): TVContext => ({
   session: model.session,
   screenW: model.screenW,
   screenH: model.screenH,

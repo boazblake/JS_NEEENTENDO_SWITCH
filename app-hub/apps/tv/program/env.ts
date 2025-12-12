@@ -1,5 +1,4 @@
-// tv/env.ts
-import type { DomEnv } from 'algebraic-fx' // EXACT IMPORT PER DOCS
+import type { DomEnv } from 'algebraic-fx'
 
 // Extend DomEnv with WebSocket
 export type TVEnv = DomEnv & {

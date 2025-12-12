@@ -8,14 +8,12 @@ import { MessageType, Screen, type Payload } from '../../../shared/src/types.ts'
 //  Session tracking
 // ---------------------------------------------------------------------------
 
-interface Session = {
+interface Session {
   tv: WebSocket
   controllers: Set<WebSocket>
 }
 
 const sessions = new Map<string, Session>()
-
-// Controllers connected but not yet joined to a TV session
 const pendingControllers = new Set<WebSocket>()
 
 // ---------------------------------------------------------------------------
@@ -40,7 +38,6 @@ server.listen(8081, '0.0.0.0', () =>
 const isOpen = (ws: WebSocket) => ws.readyState === WebSocket.OPEN
 
 const safeSend = (ws: WebSocket | undefined, payload: Payload) => {
-  // console.warn('sending: ', payload)
   if (!ws || !isOpen(ws)) return
   ws.send(JSON.stringify(payload))
 }
@@ -55,42 +52,40 @@ const relayHello = (socket: WebSocket): void => {
   })
 }
 
-// Send updated TV list to all controllers (pending + attached)
+// Send updated TV list to all controllers
 const broadcastTVList = (): void => {
   const tvList = Array.from(sessions.keys())
+
   const payload: Payload = {
     type: MessageType.TV_LIST,
-    msg: { screen: Screen.LOBBY, list: tvList },
+    msg: {
+      screen: Screen.LOBBY,
+      list: tvList
+    },
     t: now()
   }
 
-  // pending controllers (not in any session yet)
-  for (const c of pendingControllers) if (isOpen(c)) safeSend(c, payload)
-
-  // controllers already attached to a session
+  for (const c of pendingControllers) safeSend(c, payload)
   for (const s of sessions.values())
-    for (const c of s.controllers) if (isOpen(c)) safeSend(c, payload)
+    for (const c of s.controllers) safeSend(c, payload)
 }
 
 // ---------------------------------------------------------------------------
-//  Core message handling
+//  Core WS Handling
 // ---------------------------------------------------------------------------
 
 wss.on('connection', (socket) => {
-  // treat as controller until proven otherwise
   pendingControllers.add(socket)
 
+  console.log(';hello')
   relayHello(socket)
 
-  console.log('connected', socket)
-  // always send the current list to the newly connected client
-  // this makes controllers show TVs immediately
-  const currentList: Payload = {
+  // Immediately broadcast TV list
+  safeSend(socket, {
     type: MessageType.TV_LIST,
     msg: { screen: Screen.LOBBY, list: Array.from(sessions.keys()) },
     t: now()
-  }
-  safeSend(socket, currentList)
+  })
 
   socket.on('message', (raw) => {
     let payload: Payload
@@ -109,7 +104,7 @@ wss.on('connection', (socket) => {
     if (!type || !msg) return
     const session = msg.session
 
-    // --- 1) TV registers a room -------------------------------------------
+    // ---------------- TV REGISTER ------------------
     if (type === MessageType.REGISTER_TV) {
       if (!session) {
         safeSend(socket, {
@@ -124,7 +119,6 @@ wss.on('connection', (socket) => {
       if (old?.tv && old.tv !== socket) old.tv.close(1012, 'TV replaced')
 
       sessions.set(session, { tv: socket, controllers: new Set() })
-      // a TV is not a controller; remove if present
       pendingControllers.delete(socket)
 
       safeSend(socket, {
@@ -134,11 +128,11 @@ wss.on('connection', (socket) => {
       })
 
       console.info(`[relay] TV registered: ${session}`)
-      broadcastTVList() // notify all controllers (pending + attached)
+      broadcastTVList()
       return
     }
 
-    // --- 2) Controller joins after selecting TV ----------------------------
+    // ---------------- CONTROLLER REGISTER ------------------
     if (type === MessageType.REGISTER_PLAYER) {
       if (!session) {
         safeSend(socket, {
@@ -168,7 +162,6 @@ wss.on('connection', (socket) => {
         t: now()
       })
 
-      // Notify TV about the new controller
       safeSend(s.tv, {
         type: MessageType.PLAYER_JOINED,
         msg: { session, id: msg.id, name: msg.name },
@@ -179,29 +172,36 @@ wss.on('connection', (socket) => {
       return
     }
 
-    // --- 3) Keepalive ------------------------------------------------------
+    // ---------------- KEEP ALIVE ------------------
     if (type === MessageType.RELAY_PONG || type === MessageType.PONG) return
     if (type === MessageType.PING) {
-      safeSend(socket, { type: MessageType.PONG, msg: {}, t: now() })
+      safeSend(socket, {
+        type: MessageType.PONG,
+        msg: {},
+        t: now()
+      })
       return
     }
-    // --- 4) Route all other messages within the session --------------------
+
+    // ---------------- SESSION ROUTING ------------------
     if (!session) return
     const s = sessions.get(session)
     if (!s) return
 
-    // TV → Controllers
+    // TV → controllers
     if (socket === s.tv) {
       for (const c of s.controllers) safeSend(c, payload)
       return
     }
 
     // Controller → TV
-
     safeSend(s.tv, payload)
   })
 
-  // --- 5) Cleanup ----------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // Cleanup
+  // -------------------------------------------------------------------------
+
   socket.on('close', () => {
     pendingControllers.delete(socket)
 
@@ -209,15 +209,18 @@ wss.on('connection', (socket) => {
       if (s.tv === socket) {
         sessions.delete(code)
         console.info(`[relay] TV closed ${code}`)
+
         for (const c of s.controllers)
           safeSend(c, {
-            type: MessageType.DISCONNECT_PLAYER,
+            type: MessageType.PLAYER_LEFT,
             msg: { session: code, reason: 'TV_DISCONNECTED' },
             t: now()
           })
+
         broadcastTVList()
       } else if (s.controllers.delete(socket)) {
         console.info(`[relay] Controller left ${code}`)
+
         safeSend(s.tv, {
           type: MessageType.PLAYER_LEFT,
           msg: { session: code },

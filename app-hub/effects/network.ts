@@ -1,35 +1,55 @@
+// app-hub/effects/network.ts
 import { Stream, Reader, IO, type DomEnv, type Dispatch } from 'algebraic-fx'
-import { MessageType, NetworkMessage, type Payload } from '@/shared/types.js'
-/**
- * Creates a periodic IO that sends the current model to all clients.
- * The stream emits once every `ms` milliseconds.
- */
+import type { Payload } from '../shared/src/types.ts'
 
-export const broadcastState = (ws, getState, ms = 2000) => {
-  const s = Stream.interval(ms)
-  const unsub = s.subscribe({
-    next: () => {
-      const state = getState()
-      console.log(JSON.stringify({ type: 'STATE_SYNC', msg: { state } }))
-      sendIO(ws, JSON.stringify({ type: 'STATE_SYNC', msg: { state } })).run()
-    },
-    error: (e) => console.error('[broadcastState]', e)
-  })
-  return IO(() => unsub) // returning IO allows runtime to cancel it later
-}
+/** Env that carries both DOM and a WebSocket connection */
+export type WsEnv = DomEnv & { ws: WebSocket }
+
 /**
- * Pure Reader<DomEnv, IO> for sending a message over WebSocket.
+ * Periodic broadcaster.
+ *
+ * Produces an IO that:
+ *  - subscribes to a Stream.interval(ms)
+ *  - on each tick, calls getState()
+ *  - sends `{ type: "STATE_SYNC", msg: { state } }` over the given ws
+ *  - returns an unsubscribe function as cleanup
+ */
+export const broadcastState = <State>(
+  ws: WebSocket,
+  getState: () => State,
+  ms = 2000
+): IO<() => void> => {
+  const s = Stream.interval(ms)
+
+  return IO(() => {
+    const unsub = s.subscribe({
+      next: () => {
+        const state = getState()
+        const msg = { type: 'STATE_SYNC', msg: { state } }
+        console.log('[broadcastState]', JSON.stringify(msg))
+        sendIO(ws, msg).run()
+      },
+      error: (e) => console.error('[broadcastState]', e)
+    })
+
+    return unsub
+  })
+}
+
+/**
+ * Pure Reader<WsEnv, IO<void>> for sending a message over WebSocket.
  * Describes the effect but does not execute it until interpreted
  * with a concrete environment containing `ws`.
  */
-
-export const sendMsg = (payload: Payload) =>
+export const sendMsg = (payload: Payload): Reader<WsEnv, IO<void>> =>
   Reader((env) =>
     IO(() => {
       const ws = env.ws
       const data = JSON.stringify(payload)
-      if (ws.readyState === WebSocket.OPEN) ws.send(data)
-      else {
+
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(data)
+      } else {
         const onOpen = () => {
           ws.send(data)
           ws.removeEventListener('open', onOpen)
@@ -49,7 +69,12 @@ export const readArrayBufferText = (
 ): Reader<DomEnv, IO<string>> =>
   Reader(() => IO(() => new TextDecoder().decode(buf)))
 
-/** WebSocket message stream (Reader<DomEnv, IO<T>> events) */
+/**
+ * WebSocket message stream.
+ *
+ * Produces a Stream of Reader<DomEnv, IO<T>> where each event describes
+ * how to decode the incoming message into a parsed payload of type T.
+ */
 export const socketStream = <T = any>(
   ws: WebSocket
 ): Stream<Reader<DomEnv, IO<T>>> =>
@@ -92,7 +117,12 @@ export const socketStream = <T = any>(
     }
   })
 
-/** IO for safe send (imperative helper, still available) */
+/**
+ * IO for safe send (imperative helper).
+ *
+ * This is useful in non-Program code (e.g. server, quick scripts)
+ * where you want to fire-and-forget without Reader<Env>.
+ */
 export const sendIO = (ws: WebSocket, msg: any): IO<void> =>
   IO(() => {
     const data = JSON.stringify(msg)
@@ -106,18 +136,28 @@ export const sendIO = (ws: WebSocket, msg: any): IO<void> =>
     }
   })
 
-/** Run the socket stream inside a concrete environment */
+/**
+ * Run the socket stream inside a concrete DOM environment.
+ *
+ * Adapts:
+ *   Stream<Reader<DomEnv, IO<T>>>
+ * into:
+ *   IO that calls `dispatch(payload: T)` for each parsed message.
+ */
 export const runSocketStream = <T>(
   ws: WebSocket,
-  dispatch: Dispatch,
+  dispatch: Dispatch<T>,
   env: DomEnv
 ): (() => void) => {
   const stream = socketStream<T>(ws)
+
   return stream.subscribe({
     next: (rio) => {
       try {
         const io = rio.run(env)
-        Promise.resolve(io.run()).then((payload) => dispatch(payload))
+        Promise.resolve(io.run()).then((payload) => {
+          if (payload) dispatch(payload)
+        })
       } catch (err) {
         console.error('socketStream error', err)
       }

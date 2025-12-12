@@ -1,13 +1,12 @@
-// tv/program/init.ts
 import { IO } from 'algebraic-fx'
 import type { RawEffect } from 'algebraic-fx'
 import type { TVModel, TVMsg } from './types'
-import type { TVEnv } from '../env'
+import type { TVEnv } from './env'
 
 import { Screen } from '@shared/types'
 
 import { resizeEffect, actionsEffect } from '@effects/global'
-import { socketEffect } from '@effects/socket'
+import { socketEffect, registerTVEffect } from './effects.ts'
 
 import { init as lobbyInit } from './lobby/init'
 import { init as menuInit } from './menu/init'
@@ -36,11 +35,12 @@ export const init = IO<{
     menu,
     calibration: null,
     spray: null,
-    wordpond: null
+    wordpond: null,
+    driving: null,
+    pacman: null
   }
 
-  return {
-    model,
-    effects: [socketEffect, resizeEffect, actionsEffect]
-  }
+  const effects = [socketEffect, resizeEffect, actionsEffect, registerTVEffect]
+
+  return { model, effects }
 })

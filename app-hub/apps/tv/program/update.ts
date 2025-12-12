@@ -1,8 +1,9 @@
 import type { Dispatch } from 'algebraic-fx'
-import type { TVModel, TVCtx } from './types'
-import { MessageType, type Payload, WordPondMsg } from '@shared/types'
+import { MessageType, WordPondMsg, type Payload } from '@shared/types'
 import { sendMsg } from '@effects/network'
 import { orientationToXY } from './effects'
+
+import type { TVModel, TVContext, TVMsg } from './types'
 
 import { program as Lobby } from './lobby'
 import { program as Menu } from './menu'
@@ -13,11 +14,19 @@ import { program as PacMan } from './pac-man'
 import { program as Driving } from './driving'
 
 const routeSubProgram = (
-  payload: Payload,
+  payload: TVMsg,
   model: TVModel,
-  dispatch: Dispatch
+  dispatch: Dispatch<TVMsg>
 ) => {
-  const ctx: TVCtx = model
+  const ctx: TVContext = {
+    session: model.session,
+    screenW: model.screenW,
+    screenH: model.screenH,
+    controllers: model.controllers,
+    actions: model.actions,
+    players: model.players
+  }
+
   const screen = payload.msg.screen as TVModel['screen']
 
   switch (screen) {
@@ -25,44 +34,59 @@ const routeSubProgram = (
       const r = Lobby.update(payload, model.lobby, dispatch, ctx)
       return { model: { ...model, lobby: r.model }, effects: r.effects }
     }
+
     case 'menu': {
+      if (!model.menu) return { model, effects: [] }
       const r = Menu.update(payload, model.menu, dispatch, ctx)
       return { model: { ...model, menu: r.model }, effects: r.effects }
     }
+
     case 'calibration': {
+      if (!model.calibration) return { model, effects: [] }
       const r = Calibration.update(payload, model.calibration, dispatch, ctx)
       return { model: { ...model, calibration: r.model }, effects: r.effects }
     }
+
     case 'spraycan': {
+      if (!model.spray) return { model, effects: [] }
       const r = Spray.update(payload, model.spray, dispatch, ctx)
       return { model: { ...model, spray: r.model }, effects: r.effects }
     }
+
     case 'wordpond': {
+      if (!model.wordpond) return { model, effects: [] }
       const r = WordPond.update(payload, model.wordpond, dispatch, ctx)
       return { model: { ...model, wordpond: r.model }, effects: r.effects }
     }
+
     case 'driving': {
+      if (!model.driving) return { model, effects: [] }
       const r = Driving.update(payload, model.driving, dispatch, ctx)
       return { model: { ...model, driving: r.model }, effects: r.effects }
     }
+
     case 'pacman': {
+      if (!model.pacman) return { model, effects: [] }
       const r = PacMan.update(payload, model.pacman, dispatch, ctx)
       return { model: { ...model, pacman: r.model }, effects: r.effects }
     }
+
     default:
       return { model, effects: [] }
   }
 }
 
 export const update = (
-  payload: Payload,
+  payload: TVMsg,
   model: TVModel,
-  dispatch: Dispatch
-) => {
+  dispatch: Dispatch<TVMsg>
+): { model: TVModel; effects: any[] } => {
   switch (payload.type) {
     case MessageType.RELAY_HELLO: {
-      console.info('connected', payload)
+      console.info('[tv] relay hello', payload)
+      return { model, effects: [] }
     }
+
     case MessageType.NAVIGATE: {
       const screen = payload.msg.screen as TVModel['screen']
       const next = { ...model, screen }
@@ -126,7 +150,7 @@ export const update = (
         }
       }
 
-      const effects: any[] = []
+      const effects: TVMsg[] = []
 
       if (hoveredId !== pointer.hoveredId) {
         effects.push(
@@ -150,18 +174,24 @@ export const update = (
         }
       }
 
-      // base model with updated controllers
       let nextModel: TVModel = {
         ...model,
         controllers: nextControllers
       }
-      let nextEffects = effects
+      let nextEffects: any[] = effects
 
-      // Driving: forward synthetic CALIB_UPDATE into Driving.update when driving screen is active
-      if (model.screen === 'driving') {
-        const ctx: TVCtx = nextModel
+      if (model.screen === 'driving' && model.driving) {
+        const ctx: TVContext = {
+          session: nextModel.session,
+          screenW: nextModel.screenW,
+          screenH: nextModel.screenH,
+          controllers: nextModel.controllers,
+          actions: nextModel.actions,
+          players: nextModel.players
+        }
+
         const r = Driving.update(
-          { type: 'CALIB_UPDATE', msg: payload.msg },
+          { type: MessageType.CALIB_UPDATE, msg: payload.msg } as TVMsg,
           model.driving,
           dispatch,
           ctx
@@ -173,9 +203,17 @@ export const update = (
         }
         nextEffects = [...nextEffects, ...r.effects]
       }
-      // Pacman: forward synthetic CALIB_UPDATE into Pacman.update when pacman screen is active
-      if (model.screen === 'pacman') {
-        const ctx: TVCtx = nextModel
+
+      if (model.screen === 'pacman' && model.pacman) {
+        const ctx: TVContext = {
+          session: nextModel.session,
+          screenW: nextModel.screenW,
+          screenH: nextModel.screenH,
+          controllers: nextModel.controllers,
+          actions: nextModel.actions,
+          players: nextModel.players
+        }
+
         const r = PacMan.update(payload, nextModel.pacman, dispatch, ctx)
         nextModel = {
           ...nextModel,
@@ -183,9 +221,17 @@ export const update = (
         }
         nextEffects = [...nextEffects, ...r.effects]
       }
-      if (model.screen === 'calibration') {
-        console.log('model', model, payload)
-        const ctx: TVCtx = nextModel
+
+      if (model.screen === 'calibration' && model.calibration) {
+        const ctx: TVContext = {
+          session: nextModel.session,
+          screenW: nextModel.screenW,
+          screenH: nextModel.screenH,
+          controllers: nextModel.controllers,
+          actions: nextModel.actions,
+          players: nextModel.players
+        }
+
         const r = Calibration.update(
           payload,
           nextModel.calibration,
@@ -242,13 +288,21 @@ export const update = (
     }
 
     case 'DRIVING_READY': {
-      console.log('driving')
-      const ctx = model
+      if (!model.driving) return { model, effects: [] }
+      const ctx: TVContext = {
+        session: model.session,
+        screenW: model.screenW,
+        screenH: model.screenH,
+        controllers: model.controllers,
+        actions: model.actions,
+        players: model.players
+      }
       const r = Driving.update(payload, model.driving, dispatch, ctx)
       return { model: { ...model, driving: r.model }, effects: r.effects }
     }
 
     case MessageType.SPRAY_POINT: {
+      if (!model.spray) return { model, effects: [] }
       if (!payload.msg.active) return { model, effects: [] }
 
       const id = payload.msg.id
@@ -272,13 +326,21 @@ export const update = (
         }
       })
 
-      const tickPayload: Payload = {
+      const tickPayload: TVMsg = {
         type: 'INTERNAL_SPRAY_TICK',
         msg: { screen: 'spraycan', dots },
         t: Date.now()
       }
 
-      const ctx: TVCtx = model
+      const ctx: TVContext = {
+        session: model.session,
+        screenW: model.screenW,
+        screenH: model.screenH,
+        controllers: model.controllers,
+        actions: model.actions,
+        players: model.players
+      }
+
       const r = Spray.update(tickPayload, model.spray, dispatch, ctx)
 
       return {
@@ -289,7 +351,15 @@ export const update = (
 
     case WordPondMsg.NET_UPDATE:
     case WordPondMsg.SHAKE: {
-      const ctx: TVCtx = model
+      if (!model.wordpond) return { model, effects: [] }
+      const ctx: TVContext = {
+        session: model.session,
+        screenW: model.screenW,
+        screenH: model.screenH,
+        controllers: model.controllers,
+        actions: model.actions,
+        players: model.players
+      }
       const r = WordPond.update(payload, model.wordpond, dispatch, ctx)
       return { model: { ...model, wordpond: r.model }, effects: r.effects }
     }
