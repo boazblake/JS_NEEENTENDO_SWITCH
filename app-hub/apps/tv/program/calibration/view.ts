@@ -1,6 +1,6 @@
 import { Screen } from '@shared/types'
 import { wrapScreenIn } from '@shared/utils'
-import { m } from '@shared/mithril-lite'
+import { m } from 'algebraic-fx'
 
 export const view = (model, dispatch) =>
   m(

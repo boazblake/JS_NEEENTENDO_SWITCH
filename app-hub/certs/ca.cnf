@@ -2,8 +2,10 @@
 distinguished_name = dn
 x509_extensions = v3_ca
 prompt = no
+
 [ dn ]
 CN = Wordpond Root CA
+
 [ v3_ca ]
 basicConstraints = critical,CA:true,pathlen:0
 keyUsage = critical,keyCertSign,cRLSign

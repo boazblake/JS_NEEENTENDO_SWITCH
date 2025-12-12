@@ -1,44 +1,16 @@
-import { IO, askDocument, browserEnv, runDomIO, renderApp } from 'algebraic-fx'
+// tv/main.ts
+import { renderApp } from 'algebraic-fx'
 import { renderer } from '@shared/renderer'
-import './main.css'
-import { program } from './program/index.js'
-import { runSocketStream, broadcastState } from '@/effects/network.js'
-import { registerResizeIO, registerActionsIO } from '@/effects/global.js'
-import eruda from 'eruda'
-// eruda.init()
+import { program } from './program'
+import type { TVEnv } from './program/env'
 
-// ---------------------------------------------------------------------------
-//  Setup environment
-// ---------------------------------------------------------------------------
+const env: TVEnv = {
+  window,
+  document,
+  ws: new WebSocket('wss://10.0.0.242:8081/')
+}
 
-const ws = new WebSocket('wss://192.168.7.195:8081')
-export const env = { ...browserEnv(), ws }
+const root = document.querySelector('#root')
+if (!root) throw new Error('#root not found')
 
-// ---------------------------------------------------------------------------
-//  Root element
-// ---------------------------------------------------------------------------
-
-const rootReader = askDocument.map((doc) =>
-  IO(() => doc.querySelector('#root')!)
-)
-const rootIO = IO(() => runDomIO(rootReader, env))
-
-// ---------------------------------------------------------------------------
-//  Render program
-// ---------------------------------------------------------------------------
-
-const io = renderApp(renderer, env)(rootIO, program)
-const { dispatch } = io.run()
-window.dispatch = dispatch
-// ---------------------------------------------------------------------------
-//  Environment-bound IOs
-// ---------------------------------------------------------------------------
-
-// network stream
-runSocketStream(ws, dispatch, env)
-
-// window resize listener
-runDomIO(registerResizeIO(dispatch), env)
-
-// automatic [data-action] registration
-runDomIO(registerActionsIO(dispatch), env)
+renderApp(root as HTMLElement, program, env, renderer)

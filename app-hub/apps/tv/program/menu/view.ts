@@ -1,5 +1,5 @@
-import { m } from '@shared/mithril-lite'
 import type { Model } from './types'
+import { m } from 'algebraic-fx'
 import type { TVCtx } from '../types'
 
 export const view = (model: Model, dispatch: any, ctx: TVCtx) => {

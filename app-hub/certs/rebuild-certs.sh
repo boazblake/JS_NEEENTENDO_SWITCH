@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # ------------------------------------------------------------------
-#  Regenerate full dev certificate chain for Wordpond
-#  Creates a new root CA + server cert signed by it.
+# Regenerate dev certificate chain for Wordpond – macOS & Linux compatible
+# Only includes localhost, wordpond.local, and the current machine's real IPs
 # ------------------------------------------------------------------
 set -euo pipefail
 
-CERT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../certs" && pwd)"
+CERT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_KEY="$CERT_DIR/wordpond-root.key"
 ROOT_PEM="$CERT_DIR/wordpond-root.pem"
 LEAF_KEY="$CERT_DIR/multi-ip-key.pem"
@@ -19,13 +19,34 @@ cd "$CERT_DIR"
 echo "=== Cleaning old certs ==="
 rm -f wordpond-root.{key,pem,srl} multi-ip.{key,pem,csr,srl} "$SAN_CFG" "$CA_CFG"
 
-# --- Detect current IPs -------------------------------------------------------
+# --- Detect current IPs (macOS + Linux compatible) ---------------------------
+# macOS Wi-Fi (en0) – most common on Macs
 WIFI_IP=$(ipconfig getifaddr en0 2>/dev/null || true)
-USB_IP=$(ifconfig | awk '/inet 169\.254/{print $2; exit}' || true)
-[ -z "$WIFI_IP" ] && WIFI_IP="172.25.91.180"
 
-echo "Detected Wi-Fi IP : ${WIFI_IP:-none}"
-echo "Detected USB  IP : ${USB_IP:-none}"
+# macOS fallback: look for any non-loopback IPv4 address (en*, utun*, etc.)
+if [ -z "$WIFI_IP" ]; then
+  WIFI_IP=$(ifconfig | awk '/inet [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/ && !/127\.0\.0\.1/ && !/169\.254/ {print $2; exit}')
+fi
+
+# Linux fallback (if running on Linux)
+if [ -z "$WIFI_IP" ] && command -v ip >/dev/null; then
+  WIFI_IP=$(ip -4 addr show | awk '/inet .* (en|wlan|eth)/ {print $2; exit}' | cut -d/ -f1)
+fi
+
+# Collect all non-loopback, non-link-local IPv4 addresses
+OTHER_IPS=""
+while IFS= read -r ip; do
+  [[ "$ip" == "127.0.0.1" || "$ip" == "169.254"* ]] && continue
+  OTHER_IPS="$OTHER_IPS $ip"
+done < <(ifconfig | awk '/inet [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/ {print $2}' || true)
+
+# Remove duplicates and the already-detected WIFI_IP
+OTHER_IPS=$(echo "$OTHER_IPS" | tr ' ' '\n' | grep -v '^$' | grep -v "$WIFI_IP" | sort -u)
+
+echo "Detected IPs on this machine:"
+echo "  - 127.0.0.1"
+[ -n "$WIFI_IP" ] && echo "  - $WIFI_IP"
+echo "$OTHER_IPS" | sed 's/^/  - /'
 
 # --- Root CA config -----------------------------------------------------------
 cat >"$CA_CFG" <<'EOF'
@@ -33,8 +54,10 @@ cat >"$CA_CFG" <<'EOF'
 distinguished_name = dn
 x509_extensions = v3_ca
 prompt = no
+
 [ dn ]
 CN = Wordpond Root CA
+
 [ v3_ca ]
 basicConstraints = critical,CA:true,pathlen:0
 keyUsage = critical,keyCertSign,cRLSign
@@ -47,52 +70,64 @@ cat >"$SAN_CFG" <<EOF
 [ req ]
 distinguished_name = dn
 prompt = no
+
 [ dn ]
 CN = wordpond.local
+
 [ req_ext ]
 basicConstraints = critical,CA:false
 keyUsage = critical,digitalSignature,keyEncipherment
 extendedKeyUsage = serverAuth
 subjectAltName = @alts
+
 [ alts ]
 DNS.1 = localhost
-IP.1  = ${WIFI_IP}
+DNS.2 = wordpond.local
+IP.1 = 127.0.0.1
 EOF
 
+# Add detected IPs
 I=2
-for IP in $USB_IP 172.20.10.3 192.168.7.195; do
-  [ -n "$IP" ] && echo "IP.${I}  = ${IP}" >>"$SAN_CFG" && I=$((I+1))
+if [ -n "$WIFI_IP" ]; then
+  echo "IP.${I} = ${WIFI_IP}" >>"$SAN_CFG"
+  I=$((I+1))
+fi
+for IP in $OTHER_IPS; do
+  echo "IP.${I} = ${IP}" >>"$SAN_CFG"
+  I=$((I+1))
 done
 
-# --- 1. Create Root CA -------------------------------------------------------
+# --- Create Root CA -----------------------------------------------------------
 echo "=== Creating new root CA ==="
 openssl genrsa -out "$ROOT_KEY" 4096
 openssl req -x509 -new -key "$ROOT_KEY" -sha256 -days 3650 \
   -out "$ROOT_PEM" -config "$CA_CFG" -extensions v3_ca
-echo "Root CA generated: $ROOT_PEM"
 
-# --- 2. Create server key + CSR ----------------------------------------------
+# --- Create server key + CSR -------------------------------------------------
 echo "=== Creating new server key and CSR ==="
 openssl genrsa -out "$LEAF_KEY" 2048
 openssl req -new -key "$LEAF_KEY" -out multi-ip.csr -subj "/CN=wordpond.local"
 
-# --- 3. Sign CSR with root ---------------------------------------------------
+# --- Sign CSR with root ------------------------------------------------------
 echo "=== Signing server cert with root CA ==="
 openssl x509 -req -in multi-ip.csr \
   -CA "$ROOT_PEM" -CAkey "$ROOT_KEY" -CAcreateserial \
-  -out "$LEAF_PEM" -sha256 -days 825 \
+  -out "$LEAF_PEM" -days 825 -sha256 \
   -extfile "$SAN_CFG" -extensions req_ext
 
-# --- 4. Verify ---------------------------------------------------------------
+# --- Verify ------------------------------------------------------------------
 echo "=== Verifying chain ==="
 openssl verify -CAfile "$ROOT_PEM" "$LEAF_PEM"
+echo
 
+echo "Done! Certificate now covers:"
+echo "  - https://localhost:<port>"
+echo "  - https://wordpond.local:<port>"
+echo "  - https://127.0.0.1:<port>"
+echo "  - https://10.0.0.242:<port> (and any other IPs on this machine)"
 echo
-echo "Done!"
-echo "Root CA : $ROOT_PEM"
-echo "Root Key: $ROOT_KEY"
-echo "Server  : $LEAF_PEM"
-echo "Key     : $LEAF_KEY"
+echo "Root CA     : $ROOT_PEM"
+echo "Server cert : $LEAF_PEM"
+echo "Server key  : $LEAF_KEY"
 echo
-echo "Import $ROOT_PEM into Keychain / iOS and mark as Always Trust."
-echo "Point Vite + relay to multi-ip.pem and multi-ip-key.pem."
+echo "Import $ROOT_PEM into Keychain (macOS) or Trusted Root CAs (Windows) and mark as 'Always Trust'."

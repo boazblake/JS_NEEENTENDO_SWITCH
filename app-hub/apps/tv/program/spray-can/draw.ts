@@ -1,10 +1,11 @@
-// tv/spray-can/draw.ts
-import { IO } from 'algebraic-fx'
-import type { Model } from './types'
+// spray-can/draw.ts
+import { fx } from 'algebraic-fx'
+import type { DomEnv } from 'algebraic-fx'
+import type { Model as SprayModel } from './types'
 
-export const drawSprayIO = (spray: Model) =>
-  IO(() => {
-    const el = document.getElementById(
+export const drawSprayIO = (spray: SprayModel) =>
+  fx<DomEnv, any>((env) => {
+    const el = env.document.getElementById(
       'spray-canvas'
     ) as HTMLCanvasElement | null
     if (!el) return
@@ -12,14 +13,15 @@ export const drawSprayIO = (spray: Model) =>
     const ctx = el.getContext('2d')
     if (!ctx) return
 
-    const w = (el.width = window.innerWidth)
-    const h = (el.height = window.innerHeight)
+    const w = (el.width = env.window.innerWidth)
+    const h = (el.height = env.window.innerHeight)
     ctx.clearRect(0, 0, w, h)
 
     for (const d of spray.dots) {
       const grd = ctx.createRadialGradient(d.x, d.y, 0, d.x, d.y, d.size)
       grd.addColorStop(0, d.color)
       grd.addColorStop(1, 'transparent')
+
       ctx.globalAlpha = d.opacity
       ctx.fillStyle = grd
       ctx.beginPath()

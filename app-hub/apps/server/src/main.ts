@@ -8,7 +8,7 @@ import { MessageType, Screen, type Payload } from '../../../shared/src/types.ts'
 //  Session tracking
 // ---------------------------------------------------------------------------
 
-type Session = {
+interface Session = {
   tv: WebSocket
   controllers: Set<WebSocket>
 }
@@ -82,6 +82,7 @@ wss.on('connection', (socket) => {
 
   relayHello(socket)
 
+  console.log('connected', socket)
   // always send the current list to the newly connected client
   // this makes controllers show TVs immediately
   const currentList: Payload = {

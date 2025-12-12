@@ -1,4 +1,4 @@
-import { m, render } from './mithril-lite.ts'
+import { m, render } from 'algebraic-fx'
 
 export const renderer = (root, vnode) => {
   render(root, vnode)

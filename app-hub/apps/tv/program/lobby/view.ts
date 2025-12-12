@@ -1,4 +1,4 @@
-import { m } from '@shared/mithril-lite'
+import { m } from 'algebraic-fx'
 import { MessageType, Screen } from '@shared/types'
 
 export const view = (model, dispatch, ctx) => {

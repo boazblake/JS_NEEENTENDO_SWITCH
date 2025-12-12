@@ -60,6 +60,9 @@ export const update = (
   dispatch: Dispatch
 ) => {
   switch (payload.type) {
+    case MessageType.RELAY_HELLO: {
+      console.info('connected', payload)
+    }
     case MessageType.NAVIGATE: {
       const screen = payload.msg.screen as TVModel['screen']
       const next = { ...model, screen }

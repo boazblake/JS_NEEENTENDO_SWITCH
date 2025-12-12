@@ -1,16 +1,19 @@
 [ req ]
 distinguished_name = dn
 prompt = no
+
 [ dn ]
 CN = wordpond.local
+
 [ req_ext ]
 basicConstraints = critical,CA:false
 keyUsage = critical,digitalSignature,keyEncipherment
 extendedKeyUsage = serverAuth
 subjectAltName = @alts
+
 [ alts ]
 DNS.1 = localhost
-IP.1  = 172.25.91.180
-IP.2  = 169.254.143.16
-IP.3  = 172.20.10.3
-IP.4  = 192.168.7.195
+DNS.2 = wordpond.local
+IP.1 = 127.0.0.1
+IP.2 = 10.0.0.242
+IP.3 = 100.97.105.4

@@ -1,4 +1,4 @@
-import { m } from '@shared/mithril-lite'
+import { m } from 'algebraic-fx'
 import { Screen, COLORS } from '@shared/types'
 
 export const layout = (

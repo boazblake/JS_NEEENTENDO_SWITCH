@@ -1,22 +1,28 @@
-import { type Dispatch } from 'algebraic-fx'
-import { MessageType, ScreenIn, CalibUpdate } from '@shared/types'
-import type { Model, Msg, Payload } from './types.js'
-import { drawControllerReaderIO } from './model.ts'
+// calibration/update.ts
+import type { Dispatch, RawEffect } from 'algebraic-fx'
+import { MessageType } from '@shared/types'
+import type { Model, Msg } from './types'
+import { makeDrawEffect } from './model'
 
-export const update = (payload: Payload, model: Model, dispatch: Dispatch) => {
-  console.log(payload, model)
+export const update = (
+  payload: Msg,
+  model: Model,
+  dispatch: Dispatch
+): { model: Model; effects: RawEffect<any>[] } => {
   switch (payload.type) {
     case 'FLIP_PY':
-      return { model: { ...model, flipPY: !model.flipPY }, effects: [] }
+      return {
+        model: { ...model, flipPY: !model.flipPY },
+        effects: []
+      }
 
-    case MessageType.CALIB_UPDATE:
-      const p = payload.msg as CalibUpdate
-      const { q, g, r } = p
-      console.log({ q, g, r })
+    case MessageType.CALIB_UPDATE: {
+      const { q, g, r } = payload.msg
       return {
         model,
-        effects: [drawControllerReaderIO(q, g, r)]
+        effects: [makeDrawEffect(q, g, r)] // Valid RawEffect<E>
       }
+    }
 
     default:
       return { model, effects: [] }

@@ -2,14 +2,12 @@
  *  Core payload
  *  -------------------------------------------------------------------------- */
 
-export type Payload = {
-  type: MessageType | string
-  msg: {
-    screen?: Screen
-    session?: string // shared between TV and controllers
-    id?: string // unique participant id
-    [k: string]: any // additional data
-  }
+export type Payload<
+  TType extends string = string,
+  TMsg extends Record<string, any> = Record<string, any>
+> = {
+  type: TType
+  msg: TMsg
   t?: number // optional timestamp (ms)
 }
 
@@ -26,23 +24,97 @@ export enum Screen {
 }
 
 /** --------------------------------------------------------------------------
- *  Word-Pond message type strings
+ *  System & session message types (namespaced)
+ *  -------------------------------------------------------------------------- */
+
+export enum MessageType {
+  // Relay lifecycle
+  RELAY_HELLO = 'system.relay.hello',
+  RELAY_ACK = 'system.relay.ack',
+  RELAY_ERROR = 'system.relay.error',
+
+  // Session / registration
+  REGISTER_TV = 'session.register.tv',
+  REGISTER_PLAYER = 'session.register.player',
+  ACK_TV = 'session.ack.tv',
+  ACK_PLAYER = 'session.ack.player',
+
+  // Discovery / lobby
+  TV_LIST = 'lobby.tv-list',
+  NO_SESSION = 'session.no-session',
+
+  // Navigation / screen selection
+  NAVIGATE = 'ui.navigate',
+  SCREEN_SELECTED = 'ui.screen-selected',
+
+  // Motion / calibration
+  CALIB_UPDATE = 'motion.calibration-update',
+
+  // Pointer and hover interactions
+  POINTER_HOVER = 'pointer.hover',
+  POINTER_CLICKED = 'pointer.clicked',
+
+  // Spray-can gameplay
+  SPRAY_START = 'spray.start',
+  SPRAY_POINT = 'spray.point',
+  SPRAY_END = 'spray.end',
+
+  // Gameplay events
+  PLAYER_JOINED = 'session.player-joined',
+  PLAYER_LEFT = 'session.player-left',
+
+  // Utility
+  PING = 'system.ping',
+  PONG = 'system.pong'
+}
+
+/** --------------------------------------------------------------------------
+ *  Word-Pond cross-device message namespace (namespaced strings)
  *  -------------------------------------------------------------------------- */
 
 export const WordPondMsg = {
-  NET_UPDATE: 'WORDPOND_NET_UPDATE', // controller → tv
-  SHAKE: 'WORDPOND_SHAKE', // controller → tv
-  STATE: 'WORDPOND_STATE' // tv → controller (optional)
-} as const
+  NET_UPDATE: 'wordpond.net' as const, // controller → tv
+  SHAKE: 'wordpond.shake' as const, // controller → tv
+  STATE: 'wordpond.state' as const // tv → controller
+}
 
 export type WordPondMsgType =
-  | typeof WordPondMsg.NET_UPDATE
-  | typeof WordPondMsg.SHAKE
-  | typeof WordPondMsg.STATE
+  | (typeof WordPondMsg)['NET_UPDATE']
+  | (typeof WordPondMsg)['SHAKE']
+  | (typeof WordPondMsg)['STATE']
 
 /** --------------------------------------------------------------------------
- *  Canonical payload (reuses your generic Payload structure)
+ *  Canonical Word-Pond payloads (still fit Payload shape)
  *  -------------------------------------------------------------------------- */
+
+export type WordPondNetUpdate = Payload<
+  (typeof WordPondMsg)['NET_UPDATE'],
+  {
+    screen: Screen.WORDPOND
+    session: string
+    id: string // controller id
+    x: number // normalized 0..1
+    y: number // normalized 0..1
+  }
+>
+
+export type WordPondShake = Payload<
+  (typeof WordPondMsg)['SHAKE'],
+  {
+    screen: Screen.WORDPOND
+    session: string
+    id: string // controller id
+  }
+>
+
+export type WordPondStatePayload = Payload<
+  (typeof WordPondMsg)['STATE'],
+  {
+    screen: Screen.WORDPOND
+    session: string
+    state: WordPondState
+  }
+>
 
 export type WordPondPayload =
   | WordPondNetUpdate
@@ -50,47 +122,7 @@ export type WordPondPayload =
   | WordPondStatePayload
 
 /** --------------------------------------------------------------------------
- *  Controller → TV
- *  -------------------------------------------------------------------------- */
-
-export type WordPondNetUpdate = {
-  type: typeof WordPondMsg.NET_UPDATE
-  msg: {
-    screen: Screen.WORDPOND
-    session: string
-    id: string // controller id
-    x: number // normalized 0..1
-    y: number // normalized 0..1
-  }
-  t?: number
-}
-
-export type WordPondShake = {
-  type: typeof WordPondMsg.SHAKE
-  msg: {
-    screen: Screen.WORDPOND
-    session: string
-    id: string // controller id
-  }
-  t?: number
-}
-
-/** --------------------------------------------------------------------------
- *  TV → Controllers
- *  -------------------------------------------------------------------------- */
-
-export type WordPondStatePayload = {
-  type: typeof WordPondMsg.STATE
-  msg: {
-    screen: Screen.WORDPOND
-    session: string
-    state: WordPondState // defined below
-  }
-  t?: number
-}
-
-/** --------------------------------------------------------------------------
- *  Game state model shared between TV and controllers
+ *  Shared game-state model for Word-Pond (TV + controllers)
  *  -------------------------------------------------------------------------- */
 
 export type Letter = {
@@ -123,7 +155,7 @@ export type WordPondState = {
 }
 
 /** --------------------------------------------------------------------------
- *  Message types
+ *  Global color palette shared by apps
  *  -------------------------------------------------------------------------- */
 
 export const COLORS: { color: string; hex: string }[] = [
@@ -137,42 +169,6 @@ export const COLORS: { color: string; hex: string }[] = [
   { color: 'pink', hex: '#ec4899' }
 ]
 
-export enum MessageType {
-  // Relay lifecycle
-  RELAY_HELLO = 'RELAY_HELLO',
-  RELAY_ACK = 'RELAY_ACK',
-  RELAY_ERROR = 'RELAY_ERROR',
-
-  // Session / registration
-  REGISTER_TV = 'REGISTER_TV',
-  REGISTER_PLAYER = 'REGISTER_PLAYER',
-  ACK_TV = 'ACK_TV',
-  ACK_PLAYER = 'ACK_PLAYER',
-
-  // Discovery / lobby
-  TV_LIST = 'TV_LIST',
-  NO_SESSION = 'NO_SESSION',
-  NAVIGATE = 'NAVIGATE',
-  SCREEN_SELECTED = 'SCREEN_SELECTED',
-  // Motion / calibration
-  CALIB_UPDATE = 'CALIB_UPDATE',
-
-  // Pointer and hover interactions
-  POINTER_HOVER = 'POINTER_HOVER',
-  POINTER_CLICKED = 'POINTER_CLICKED',
-
-  SPRAY_START = 'SPRAY_START', // select color
-  SPRAY_POINT = 'SPRAY_POINT', // spray active (continuous)
-  SPRAY_END = 'SPRAY_END', // release trigger
-  // Gameplay events
-  PLAYER_JOINED = 'PLAYER_JOINED',
-  PLAYER_LEFT = 'PLAYER_LEFT',
-
-  // Utility
-  PING = 'PING',
-  PONG = 'PONG'
-}
-
 /** --------------------------------------------------------------------------
  *  Common player state
  *  -------------------------------------------------------------------------- */
@@ -181,201 +177,40 @@ export enum PlayerStatus {
   IDLE = 'idle',
   CONNECTED = 'connected'
 }
-// OLD
-// export type Payload = {
-//   type: MessageType | string
-//   msg: {
-//     screen?: Screen
-//     // include routing and identity here
-//     session?: string
-//     id?: string
-//     [k: string]: any
-//   }
-//   t?: number
-// }
-//
-// export enum Screen {
-//   LOBBY = 'lobby',
-//   MENU = 'menu',
-//   CALIBRATION = 'calibration',
-//   SPRAYCAN = 'spraycan'
-// }
-//
-// export enum MessageType {
-//   // relay lifecycle
-//   RELAY_HELLO = 'RELAY_HELLO',
-//   RELAY_ACK = 'RELAY_ACK',
-//   RELAY_ERROR = 'RELAY_ERROR',
-//
-//   // session / registration
-//   REGISTER_TV = 'REGISTER_TV',
-//   REGISTER_PLAYER = 'REGISTER_PLAYER',
-//   ACK_TV = 'ACK_TV',
-//   ACK_PLAYER = 'ACK_PLAYER',
-//
-//   // controller → tv
-//   CALIB_UPDATE = 'CALIB_UPDATE',
-//
-//   // tv → controller
-//   PLAYER_JOINED = 'PLAYER_JOINED',
-//   PLAYER_LEFT = 'PLAYER_LEFT',
-//
-//   // discovery
-//   TV_LIST = 'TV_LIST',
-//
-//   // misc
-//   PING = 'PING',
-//   PONG = 'PONG',
-//   NO_SESSION = 'NO_SESSION'
-// }
-//
-// /** --------------------------------------------------------------------------
-//  *  Base message and common fields
-//  *  -------------------------------------------------------------------------- */
-//
-// export interface BaseMessage {
-//   type: MessageType
-//   /** session identifier (shared between TV and controllers) */
-//   session?: string
-//   /** unique participant id */
-//   id?: string
-//   /** optional timestamp for traceability */
-//   time?: number
-// }
-//
-// /** --------------------------------------------------------------------------
-//  *  Session / registration
-//  *  -------------------------------------------------------------------------- */
-//
-// export interface RegisterTV extends BaseMessage {
-//   type: MessageType.REGISTER_TV
-//   session: string
-// }
-//
-// export interface RegisterPlayer extends BaseMessage {
-//   type: MessageType.REGISTER_PLAYER
-//   session: string
-//   name: string
-// }
-//
-// export interface AckPlayer extends BaseMessage {
-//   type: MessageType.ACK_PLAYER
-//   id: string
-//   slot: number
-// }
-//
-// /** --------------------------------------------------------------------------
-//  *  Navigation / app control
-//  *  -------------------------------------------------------------------------- */
-//
-// export interface AppSelected extends BaseMessage {
-//   type: MessageType.APP_SELECTED
-//   app: string
-// }
-//
-// export interface Navigate extends BaseMessage {
-//   type: MessageType.NAVIGATE
-//   to: string
-// }
-//
-// /** --------------------------------------------------------------------------
-//  *  Calibration messages
-//  *  -------------------------------------------------------------------------- */
-//
-// export interface CalibUpdate extends BaseMessage {
-//   type: MessageType.CALIB_UPDATE
-//   alpha: number
-//   x: number
-//   y: number
-// }
-//
-// export interface CalibDone extends BaseMessage {
-//   type: MessageType.CALIB_DONE
-// }
-//
-// /** --------------------------------------------------------------------------
-//  *  Spray-can messages
-//  *  -------------------------------------------------------------------------- */
-//
-// export interface SprayStart extends BaseMessage {
-//   type: MessageType.SPRAY_START
-//   color: string
-// }
-//
-// export interface SprayPoint extends BaseMessage {
-//   type: MessageType.SPRAY_POINT
-//   x: number
-//   y: number
-//   pressure: number
-// }
-//
-// export interface SprayEnd extends BaseMessage {
-//   type: MessageType.SPRAY_END
-// }
-//
-// /** --------------------------------------------------------------------------
-//  *  Network / relay utility messages
-//  *  -------------------------------------------------------------------------- */
-//
-// export interface NetworkIn extends BaseMessage {
-//   type: MessageType.NETWORK_IN
-//   payload: NetworkMessage // the wrapped message
-// }
-//
-// export interface Ping extends BaseMessage {
-//   type: MessageType.PING
-// }
-//
-// export interface Pong extends BaseMessage {
-//   type: MessageType.PONG
-// }
-//
-// /** --------------------------------------------------------------------------
-//  *  Error / log
-//  *  -------------------------------------------------------------------------- */
-//
-// export interface ErrorMsg extends BaseMessage {
-//   type: MessageType.ERROR
-//   message: string
-// }
-//
-// export interface LogMsg extends BaseMessage {
-//   type: MessageType.LOG
-//   message: string
-// }
-//
-// /** --------------------------------------------------------------------------
-//  *  Union of every known network message
-//  *  -------------------------------------------------------------------------- */
-//
-// export type NetworkMessage =
-//   | RegisterTV
-//   | RegisterPlayer
-//   | AckPlayer
-//   | AppSelected
-//   | Navigate
-//   | CalibUpdate
-//   | CalibDone
-//   | SprayStart
-//   | SprayPoint
-//   | SprayEnd
-//   | Ping
-//   | Pong
-//   | ErrorMsg
-//   | LogMsg
-//
-// /** --------------------------------------------------------------------------
-//  *  Full message graph (including relay wrappers)
-//  *  -------------------------------------------------------------------------- */
-//
-// export type AnyMessage = NetworkMessage | NetworkIn
-//
-// /** --------------------------------------------------------------------------
-//  *  Shared enums for common data
-//  *  -------------------------------------------------------------------------- */
-//
-// export enum PlayerStatus {
-//   IDLE = 'idle',
-//   CONNECTED = 'connected'
-// }
-//
+
+/** --------------------------------------------------------------------------
+ *  Root network union (optional, if you want one place to type all WS msgs)
+ *  -------------------------------------------------------------------------- */
+
+// All cross-device messages that actually travel over the relay.
+// Extend this union as you add more app-level namespaced messages.
+export type NetworkMessage =
+  // System / relay / session / navigation
+  | Payload<MessageType.RELAY_HELLO, any>
+  | Payload<MessageType.RELAY_ACK, any>
+  | Payload<MessageType.RELAY_ERROR, any>
+  | Payload<MessageType.REGISTER_TV, any>
+  | Payload<MessageType.REGISTER_PLAYER, any>
+  | Payload<MessageType.ACK_TV, any>
+  | Payload<MessageType.ACK_PLAYER, any>
+  | Payload<MessageType.TV_LIST, any>
+  | Payload<MessageType.NO_SESSION, any>
+  | Payload<MessageType.NAVIGATE, any>
+  | Payload<MessageType.SCREEN_SELECTED, any>
+  | Payload<MessageType.CALIB_UPDATE, any>
+  | Payload<MessageType.POINTER_HOVER, any>
+  | Payload<MessageType.POINTER_CLICKED, any>
+  | Payload<MessageType.SPRAY_START, any>
+  | Payload<MessageType.SPRAY_POINT, any>
+  | Payload<MessageType.SPRAY_END, any>
+  | Payload<MessageType.PLAYER_JOINED, any>
+  | Payload<MessageType.PLAYER_LEFT, any>
+  | Payload<MessageType.PING, any>
+  | Payload<MessageType.PONG, any>
+  // Word-Pond cross-device messages
+  | WordPondNetUpdate
+  | WordPondShake
+  | WordPondStatePayload
+
+// If you still want a very loose "anything WS" type for the server, keep:
+export type AnyPayload = Payload<string, Record<string, any>>

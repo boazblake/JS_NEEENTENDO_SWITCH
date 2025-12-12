@@ -1,4 +1,3 @@
-// tv/view.ts
 import { layout } from './layout'
 import type { TVModel, TVCtx } from './types'
 import { program as Lobby } from './lobby'
