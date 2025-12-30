@@ -1,39 +1,64 @@
-import type { Model } from './types'
 import { m } from 'algebraic-fx'
-import type { TVCtx } from '../types'
+import { Screen, MessageType } from '@shared/types'
+import type { Model, Msg } from './types'
+import type { TVContext } from '../types'
 
-export const view = (model: Model, dispatch: any, ctx: TVCtx) => {
-  const firstController = Object.values(ctx.controllers)[0]
-  const hovered = firstController?.pointer.hoveredId ?? null
-
-  return m(
+export const view = (
+  _model: Model,
+  dispatch: (msg: Msg) => void,
+  _ctx: TVContext
+) =>
+  m(
     'div',
-    { class: 'flex flex-col items-center gap-6 text-white relative' },
+    {
+      class:
+        'relative flex flex-col items-center justify-center min-h-screen text-white bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden'
+    },
 
     m(
       'div',
-      { class: 'flex flex-col items-center gap-4' },
+      {
+        class:
+          'relative z-10 flex flex-col items-center px-16 py-12 rounded-3xl backdrop-blur-sm bg-white/5 border border-slate-700 shadow-2xl'
+      },
 
-      ...model.items.map((item) =>
+      m(
+        'h1',
+        { class: 'text-6xl font-extrabold tracking-tight mb-10' },
+        'Menu'
+      ),
+
+      m(
+        'div',
+        { class: 'flex gap-8' },
+
         m(
           'button',
           {
-            key: item.id,
-            'data-action': item.id,
             class:
-              'px-12 py-5 rounded-lg text-xl transition-transform ' +
-              (hovered === item.id
-                ? 'bg-blue-600 scale-110'
-                : 'bg-slate-700 hover:bg-slate-600'),
+              'px-10 py-6 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-xl font-semibold shadow-lg hover:scale-105 transition',
             onclick: () =>
               dispatch({
-                type: 'NAVIGATE',
-                msg: { to: item.screen }
+                type: MessageType.SELECT_APP,
+                app: Screen.WORDPOND
               })
           },
-          item.label
+          'Wordpond'
+        ),
+
+        m(
+          'button',
+          {
+            class:
+              'px-10 py-6 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 text-xl font-semibold shadow-lg hover:scale-105 transition',
+            onclick: () =>
+              dispatch({
+                type: MessageType.SELECT_APP,
+                app: Screen.SPRAYCAN
+              })
+          },
+          'Spray Can'
         )
       )
     )
   )
-}

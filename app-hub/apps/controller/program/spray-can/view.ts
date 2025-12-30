@@ -1,5 +1,5 @@
 // controller/spray-can/view.ts
-import { m } from '@shared/mithril-lite'
+import { m } from 'algebraic-fx'
 import { MessageType, COLORS } from '@shared/types'
 import type { Model } from './types'
 import type { ControllerCtx } from '../types'

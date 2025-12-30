@@ -1,7 +1,7 @@
-import { Screen MessageType} from '@shared/types'
+import { Screen, MessageType } from '@shared/types'
 
 export type Model = {
-  screen: Screen.MENU | Screen.SPRAYCAN | Screen.WORDPOND
+  screen: Screen
 }
 
 export type Msg =

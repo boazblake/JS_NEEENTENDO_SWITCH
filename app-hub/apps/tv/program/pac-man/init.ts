@@ -83,7 +83,7 @@ const createGhosts = (): Ghost[] => [
 /* ----------------------------------------------
    INIT
 ---------------------------------------------- */
-export const init = IO<{ model: Model; effects: any[] }>(() => {
+export const init = IO.IO<{ model: Model; effects: any[] }>(() => {
   const powerUps = createPowerUps()
   const tokens = createTokens(powerUps)
 

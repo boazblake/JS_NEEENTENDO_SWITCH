@@ -1,5 +1,5 @@
 // controller/layout.ts
-import { m } from '@shared/mithril-lite'
+import { m } from 'algebraic-fx'
 import { MessageType, Screen } from '@shared/types'
 
 export const layout = (content: any, model: any, dispatch: any) => {
@@ -7,7 +7,6 @@ export const layout = (content: any, model: any, dispatch: any) => {
   const hovered = model.hoveredId ?? null
   const name = model.name || '…'
   const isConnected = status === 'connected'
-  console.log(model)
   const statusColor = (s) =>
     s === 'connected' ? '#184' : s === 'connecting' ? '#881' : '#888'
 

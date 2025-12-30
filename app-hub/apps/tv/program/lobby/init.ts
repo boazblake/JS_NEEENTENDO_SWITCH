@@ -1,8 +1,6 @@
-import { IO } from 'algebraic-fx'
-import type { Model } from './types.js'
+import type { Model } from './types'
 import { Screen } from '@shared/types'
 
-export const init = IO(() => ({
-  model: { screen: Screen.LOBBY } as Model,
-  effects: []
-}))
+export const init = (): Model => ({
+  screen: Screen.LOBBY
+})

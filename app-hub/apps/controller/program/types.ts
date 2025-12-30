@@ -1,26 +1,17 @@
-export type Screen = 'lobby' | 'menu' | 'calibration' | 'spraycan' | 'wordpond'
+import { MessageType } from '@shared/types'
+import type { NetworkModel, NetworkMsg } from './network'
 
-import type { Model as LobbyModel } from './lobby/types'
-import type { Model as MenuModel } from './menu/types'
-import type { Model as CalibrationModel } from './calibration/types'
-import type { Model as SprayModel } from './spray-can/types'
-import type { Model as WordPondModel } from './word-pond/types'
+export type Screen = 'menu' | 'paired'
 
-export type ControllerModel = {
-  id: string
-  name: string
-  session: string
-  status: 'idle' | 'connecting' | 'connected'
+export type Model = {
   screen: Screen
-
-  hoveredId?: string | null
-
-  lobby: LobbyModel
-  menu: MenuModel
-  calibration: CalibrationModel
-  spray: SprayModel
-  wordpond: WordPondModel
+  tvList: string[]
+  session: string | null
+  network: NetworkModel
 }
 
-// CTX = full parent model
-export type ControllerCtx = ControllerModel
+export type Msg =
+  | { type: 'Network'; msg: NetworkMsg }
+  | { type: MessageType.TV_LIST; msg: { list: string[] } }
+  | { type: 'SelectTV'; session: string }
+  | { type: MessageType.ACK_PLAYER }

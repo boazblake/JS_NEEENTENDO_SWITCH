@@ -1,22 +1,18 @@
-import type { Model } from './types.js'
-import type { Dispatch } from 'algebraic-fx'
-import type { Payload } from '@shared/types'
-import { MessageType } from '@shared/types'
+import type { Model, Msg } from './types'
 
-export const update = (msg: Payload, model: Model, dispatch: Dispatch) => {
+export const update = (msg: Msg, model: Model) => {
   switch (msg.type) {
-    case MessageType.TV_LIST: {
-      const next = { ...model, availableTvs: msg.msg.list ?? [] }
-      return { model: next, effects: [] }
-    }
+    case 'SET_TV_LIST':
+      return {
+        model: { ...model, availableTvs: msg.list },
+        effects: []
+      }
 
-    case 'SELECT_TV': {
-      const tvId = msg.msg.tvId
-      const next = { ...model, connectedTv: tvId }
-      // Pass upward so parent can register and set session
-      dispatch(msg)
-      return { model: next, effects: [] }
-    }
+    case 'SELECT_TV':
+      return {
+        model: { ...model, selectedTv: msg.tvId },
+        effects: []
+      }
 
     default:
       return { model, effects: [] }

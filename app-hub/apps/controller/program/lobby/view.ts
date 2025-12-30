@@ -1,14 +1,12 @@
-import type { Model } from './types.js'
-import { MessageType } from '@shared/types'
-import type { Dispatch } from 'algebraic-fx'
-import { m } from '@shared/mithril-lite'
+import type { Model, Msg } from './types'
+import { m } from 'algebraic-fx'
 
-export const view = (model, dispatch) => {
+export const view = (model: Model, dispatch: (m: Msg) => void) => {
   return m(
     'div',
     {
       class:
-        'flex flex-col items-center justify-center h-full  text-white bg-slate-900'
+        'flex flex-col items-center justify-center h-full text-white bg-slate-900'
     },
 
     m('h1', { class: 'text-5xl mb-4' }, 'Select TV'),
@@ -24,16 +22,14 @@ export const view = (model, dispatch) => {
           'li',
           {
             key: tvId,
-            id: tvId,
             class:
               'px-6 py-4 rounded-lg bg-white/10 border border-slate-700 hover:bg-white/20 cursor-pointer',
-            onclick: () => {
-              dispatch('SELECT_TV', { tvId })
-            }
+            onclick: () => dispatch({ type: 'SELECT_TV', tvId })
           },
           m('span', { class: 'font-semibold text-lg text-teal-400' }, tvId)
         )
       ),
+
       model.availableTvs.length === 0
         ? m(
             'li',

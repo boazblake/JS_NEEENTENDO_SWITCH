@@ -28,7 +28,7 @@ const server = https.createServer({ key, cert })
 const wss = new WebSocketServer({ server })
 
 server.listen(8081, '0.0.0.0', () =>
-  console.info('[relay] HTTPS+WSS listening on https://192.168.7.195:8081')
+  console.info('[relay] HTTPS+WSS listening on wss://192.168.7.195:8081')
 )
 
 // ---------------------------------------------------------------------------
@@ -77,7 +77,6 @@ const broadcastTVList = (): void => {
 wss.on('connection', (socket) => {
   pendingControllers.add(socket)
 
-  console.log(';hello')
   relayHello(socket)
 
   // Immediately broadcast TV list
@@ -91,6 +90,7 @@ wss.on('connection', (socket) => {
     let payload: Payload
     try {
       payload = JSON.parse(raw.toString())
+      // console.log(payload)
     } catch {
       safeSend(socket, {
         type: MessageType.RELAY_ERROR,

@@ -1,9 +1,8 @@
 export type Model = {
   availableTvs: string[]
-  connectedTv: string
+  selectedTv: string | null
 }
 
 export type Msg =
-  | { type: 'TV_LIST'; payload: any }
-  | { type: 'NETWORK_IN'; payload: any }
-  | { type: 'ACK_PLAYER'; id: string; slot: number }
+  | { type: 'SET_TV_LIST'; list: string[] }
+  | { type: 'SELECT_TV'; tvId: string }

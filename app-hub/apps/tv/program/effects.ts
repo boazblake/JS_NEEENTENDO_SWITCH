@@ -148,9 +148,10 @@ export const startTickLoopIO = (dispatch: any) =>
  */
 export const socketEffect = fx<TVEnv, TVMsg>((env, dispatch) => {
   const stream = socketStream<TVMsg>(env.ws)
-
+  console.log('stream')
   const unsubscribe = stream.subscribe({
     next(reader) {
+      console.log('nexct?')
       try {
         const io = reader.run(env)
         Promise.resolve(io.run()).then((msg) => {

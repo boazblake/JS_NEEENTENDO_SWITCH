@@ -1,28 +1,16 @@
 import { IO } from 'algebraic-fx'
-import type { RawEffect } from 'algebraic-fx'
+import { Screen, MessageType } from '@shared/types'
 import type { TVModel, TVMsg } from './types'
-import type { TVEnv } from './env'
+import * as Network from './network'
 
-import { Screen } from '@shared/types'
+// import { init as lobbyInit } from './lobby/init'
 
-import { resizeEffect, actionsEffect } from '@effects/global'
-import { socketEffect, registerTVEffect } from './effects.ts'
-
-import { init as lobbyInit } from './lobby/init'
-import { init as menuInit } from './menu/init'
-
-export const init = IO<{
-  model: TVModel
-  effects: RawEffect<TVEnv>[]
-}>(() => {
+export const init = IO.IO(() => {
   const session = Math.random().toString(36).substring(2, 7).toUpperCase()
-
-  const lobby = lobbyInit.run().model
-  const menu = menuInit.run().model
 
   const model: TVModel = {
     session,
-    screen: Screen.LOBBY,
+    screen: Screen.MENU,
 
     controllers: {},
     screenW: window.innerWidth,
@@ -31,16 +19,34 @@ export const init = IO<{
     actions: [],
     players: [],
 
-    lobby,
-    menu,
+    // lobby: lobbyInit(),
+    menu: null,
     calibration: null,
     spray: null,
     wordpond: null,
     driving: null,
-    pacman: null
+    pacman: null,
+
+    network: Network.init()
   }
 
-  const effects = [socketEffect, resizeEffect, actionsEffect, registerTVEffect]
+  const effects = [
+    IO.IO<TVMsg>(() => ({
+      type: 'Network',
+      msg: { type: 'Enable', url: 'wss://localhost:8081/' }
+    })),
+    IO.IO<TVMsg>(() => ({
+      type: 'Network',
+      msg: {
+        type: 'Send',
+        msg: {
+          type: MessageType.REGISTER_TV,
+          msg: { session },
+          t: Date.now()
+        } satisfies Payload
+      }
+    }))
+  ]
 
   return { model, effects }
 })

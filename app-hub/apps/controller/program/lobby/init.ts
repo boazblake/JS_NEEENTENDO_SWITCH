@@ -1,10 +1,10 @@
 import { IO } from 'algebraic-fx'
-import type { Model } from './types.js'
+import type { Model } from './types'
 
-export const init = IO(() => ({
+export const init = IO.IO(() => ({
   model: {
     availableTvs: [],
-    connectedTv: ''
-  } as Model,
+    selectedTv: null
+  } satisfies Model,
   effects: []
 }))

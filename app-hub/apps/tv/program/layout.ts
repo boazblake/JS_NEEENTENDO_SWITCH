@@ -69,8 +69,8 @@ export const layout = (
               'mt-6 px-8 py-4 rounded-lg bg-gradient-to-r from-pink-500 to-rose-600 text-lg font-semibold shadow-lg hover:scale-105 transition',
             onclick: () =>
               dispatch({
-                type: MessageType.NAVIGATE,
-                msg: { screen: Screen.MENU, session: model.session }
+                type: 'Navigate',
+                screen: Screen.MENU
               })
           },
           '← Back'

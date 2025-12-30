@@ -16,7 +16,6 @@ export type Payload<
  *  -------------------------------------------------------------------------- */
 
 export enum Screen {
-  LOBBY = 'lobby',
   MENU = 'menu',
   CALIBRATION = 'calibration',
   SPRAYCAN = 'spraycan',
@@ -39,8 +38,8 @@ export enum MessageType {
   ACK_TV = 'session.ack.tv',
   ACK_PLAYER = 'session.ack.player',
 
-  // Discovery / lobby
-  TV_LIST = 'lobby.tv-list',
+  // Discovery
+  TV_LIST = 'tv.list',
   NO_SESSION = 'session.no-session',
 
   // Navigation / screen selection

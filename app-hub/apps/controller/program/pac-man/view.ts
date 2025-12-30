@@ -1,4 +1,4 @@
-import { m } from '@shared/mithril-lite'
+import { m } from 'algebraic-fx'
 import type { Model } from './types'
 import type { ControllerCtx } from '../types'
 

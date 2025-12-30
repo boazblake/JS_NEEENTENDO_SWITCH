@@ -4,7 +4,7 @@ import { sendMsg } from '@effects/network'
 import { MessageType, Screen } from '@shared/types'
 import { wrapScreenOut } from '@shared/utils'
 import type { Model, Msg } from './types.js'
-import { env } from '../../main.ts'
+import type { ControllerEnv } from '../env.ts'
 
 export const update = (msg: Msg, model: Model, dispatch: Dispatch) => {
   switch (msg.type) {

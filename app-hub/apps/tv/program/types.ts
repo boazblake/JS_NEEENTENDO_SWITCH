@@ -1,6 +1,6 @@
 import type { Payload, Screen as SharedScreen } from '@shared/types'
+import type { NetworkModel, NetworkMsg } from './network'
 
-// Reuse shared Screen enum for the TV
 export type TVScreen = SharedScreen
 
 export type PointerState = {
@@ -26,8 +26,7 @@ export type PlayerState = {
   slot: number
 }
 
-// Child slice models
-import type { Model as LobbyModel } from './lobby/types'
+// import type { Model as LobbyModel } from './lobby/types'
 import type { Model as MenuModel } from './menu/types'
 import type { Model as CalibrationModel } from './calibration/types'
 import type { Model as SprayModel } from './spray-can/types'
@@ -46,16 +45,17 @@ export type TVModel = {
   actions: ActionRect[]
   players: PlayerState[]
 
-  lobby: LobbyModel
+  // lobby: LobbyModel
   menu: MenuModel | null
   calibration: CalibrationModel | null
   spray: SprayModel | null
   wordpond: WordPondModel | null
   driving: DrivingModel | null
   pacman: PacManModel | null
+
+  network: NetworkModel
 }
 
-// Context passed down to children
 export type TVContext = {
   session: string
   screenW: number
@@ -65,5 +65,7 @@ export type TVContext = {
   players: PlayerState[]
 }
 
-// Program message type for TV: shared network payload
-export type TVMsg = Payload
+export type TVMsg =
+  | Payload
+  | { type: 'Network'; msg: NetworkMsg }
+  | { type: 'Shutdown'; msg: {} }

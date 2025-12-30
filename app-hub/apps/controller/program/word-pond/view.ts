@@ -1,5 +1,5 @@
 // controller/word-pond/view.ts
-import { m } from '@shared/mithril-lite'
+import { m } from 'algebraic-fx'
 import { WordPondMsg } from '@shared/types'
 import type { Model } from './types'
 import type { ControllerCtx } from '../types'

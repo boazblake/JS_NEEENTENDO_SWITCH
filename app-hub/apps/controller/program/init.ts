@@ -10,10 +10,7 @@ import { init as wordPondInit } from './word-pond/init'
 import { init as drivingInit } from './driving/init'
 import { init as pacmanInit } from './pac-man/init'
 
-import { env } from '../main'
-
-export const init = IO<{ model: ControllerModel; effects: any[] }>(() => {
-  const { id, session } = env
+export const init = IO.IO<{ model: ControllerModel; effects: any[] }>(() => {
   const name = 'Guest'
 
   const lobby = lobbyInit.run().model
@@ -25,9 +22,7 @@ export const init = IO<{ model: ControllerModel; effects: any[] }>(() => {
   const pacman = pacmanInit.run().model
 
   const model: ControllerModel = {
-    id,
     name,
-    session,
     status: 'idle',
     screen: 'lobby',
     hoveredId: null,

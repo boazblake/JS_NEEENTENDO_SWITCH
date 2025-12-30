@@ -1,8 +1,8 @@
-import type { Program } from 'algebraic-fx/core/types.js'
-import type { Model, Msg } from './types.js'
-import { init } from './init.js'
-import { update } from './update.js'
-import { view } from './view.js'
+import type { Program } from 'algebraic-fx'
+import type { Model, Msg } from './types'
+import { init } from './init'
+import { update } from './update'
+import { view } from './view'
 
 export const program: Program<Model, Msg> = {
   init,
