@@ -1,6 +1,7 @@
 import type { Model, Msg } from './types'
 
 export const update = (msg: Msg, model: Model) => {
+  console.log('lobby')
   switch (msg.type) {
     case 'SET_TV_LIST':
       return {

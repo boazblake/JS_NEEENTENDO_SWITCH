@@ -24,7 +24,7 @@ export const view = (model: Model, dispatch: (m: Msg) => void) => {
             key: tvId,
             class:
               'px-6 py-4 rounded-lg bg-white/10 border border-slate-700 hover:bg-white/20 cursor-pointer',
-            onclick: () => dispatch({ type: 'SELECT_TV', tvId })
+            onclick: () => dispatch({ type: 'SELECT_TV', msg: { tvId } })
           },
           m('span', { class: 'font-semibold text-lg text-teal-400' }, tvId)
         )

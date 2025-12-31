@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
 import path from 'path'
+import fs from 'fs'
 
 export default defineConfig({
   optimizeDeps: {
@@ -9,10 +10,15 @@ export default defineConfig({
   root: '.',
   cacheDir: '../../node_modules/.vite-controller',
   server: {
+    hmr: {
+      protocol: 'https'
+    },
     port: 5174,
     https: {
-      key: path.resolve(__dirname, '../../certs/multi-ip-key.pem'),
-      cert: path.resolve(__dirname, '../../certs/multi-ip.pem')
+      key: fs.readFileSync(
+        path.resolve(__dirname, '../../certs/multi-ip-key.pem')
+      ),
+      cert: fs.readFileSync(path.resolve(__dirname, '../../certs/multi-ip.pem'))
     }
   },
   build: {

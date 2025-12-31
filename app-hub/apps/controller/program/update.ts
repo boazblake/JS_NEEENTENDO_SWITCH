@@ -2,8 +2,11 @@ import { MessageType } from '@shared/types'
 import type { Model, Msg } from './types'
 import * as Network from './network'
 
+import { IO } from 'algebraic-fx'
+
 export const update = (msg: Msg, model: Model) => {
   // Network wrapper
+  console.log(msg)
   if (msg.type === 'Network') {
     const next = Network.update(msg.msg, model.network)
 
@@ -11,8 +14,10 @@ export const update = (msg: Msg, model: Model) => {
       const payload = msg.msg.msg
 
       if (payload.type === MessageType.TV_LIST) {
+        console.log(model)
+        model.lobby.availableTvs = payload.msg.list
         return {
-          model: { ...model, tvList: payload.msg.list },
+          model,
           effects: []
         }
       }
@@ -25,11 +30,11 @@ export const update = (msg: Msg, model: Model) => {
   }
 
   // User selects a TV
-  if (msg.type === 'SelectTV') {
+  if (msg.type === 'SELECT_TV') {
     return {
       model: { ...model, session: msg.session },
       effects: [
-        IO(() => ({
+        IO.IO(() => ({
           type: 'Network',
           msg: {
             type: 'Inbound',

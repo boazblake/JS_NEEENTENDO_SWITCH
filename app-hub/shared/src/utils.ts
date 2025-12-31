@@ -10,7 +10,10 @@ export const createMsg = (
   type: MessageType | string,
   msg: { screen?: Screen; [k: string]: any },
   t = Date.now()
-): Payload => ({ type, msg, t })
+): Payload => {
+  console.log(type, msg)
+  return { type, msg, t }
+}
 
 export const withIds = (
   p: Payload,

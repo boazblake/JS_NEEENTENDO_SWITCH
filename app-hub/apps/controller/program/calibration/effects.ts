@@ -6,7 +6,7 @@ const clamp = (v: number, min: number, max: number) =>
   Math.min(max, Math.max(min, v))
 
 export const startMotion = (dispatch: Dispatch) =>
-  IO(async () => {
+  IO.IO(async () => {
     console.log('[startMotion] starting native motion')
 
     let remove: (() => void) | undefined

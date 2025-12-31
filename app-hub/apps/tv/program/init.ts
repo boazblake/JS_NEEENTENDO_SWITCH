@@ -1,5 +1,6 @@
 import { IO } from 'algebraic-fx'
 import { Screen, MessageType } from '@shared/types'
+import { send } from '@shared/network/send'
 import type { TVModel, TVMsg } from './types'
 import * as Network from './network'
 
@@ -31,21 +32,15 @@ export const init = IO.IO(() => {
   }
 
   const effects = [
-    IO.IO<TVMsg>(() => ({
+    IO.IO(() => ({
       type: 'Network',
-      msg: { type: 'Enable', url: 'wss://localhost:8081/' }
+      msg: { type: 'Enable', url: 'wss://192.168.7.195:8081' }
     })),
-    IO.IO<TVMsg>(() => ({
-      type: 'Network',
-      msg: {
-        type: 'Send',
-        msg: {
-          type: MessageType.REGISTER_TV,
-          msg: { session },
-          t: Date.now()
-        } satisfies Payload
-      }
-    }))
+    send({
+      type: MessageType.REGISTER_TV,
+      msg: { session },
+      t: Date.now()
+    })
   ]
 
   return { model, effects }

@@ -41,7 +41,7 @@ while IFS= read -r ip; do
 done < <(ifconfig | awk '/inet [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/ {print $2}' || true)
 
 # Remove duplicates and the already-detected WIFI_IP
-OTHER_IPS=$(echo "$OTHER_IPS" | tr ' ' '\n' | grep -v '^$' | grep -v "$WIFI_IP" | sort -u)
+OTHER_IPS=$(echo "$OTHER_IPS" | tr ' ' '\n' | grep -v '^$' | grep -v "$WIFI_IP" | sort -u || true)
 
 echo "Detected IPs on this machine:"
 echo "  - 127.0.0.1"

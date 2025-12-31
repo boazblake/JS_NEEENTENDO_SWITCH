@@ -9,6 +9,7 @@ import { init as sprayInit } from './spray-can/init'
 import { init as wordPondInit } from './word-pond/init'
 import { init as drivingInit } from './driving/init'
 import { init as pacmanInit } from './pac-man/init'
+import * as Network from './network/'
 
 export const init = IO.IO<{ model: ControllerModel; effects: any[] }>(() => {
   const name = 'Guest'
@@ -20,6 +21,7 @@ export const init = IO.IO<{ model: ControllerModel; effects: any[] }>(() => {
   const wordpond = wordPondInit.run().model
   const driving = drivingInit.run().model
   const pacman = pacmanInit.run().model
+  const network = Network.init()
 
   const model: ControllerModel = {
     name,
@@ -32,8 +34,17 @@ export const init = IO.IO<{ model: ControllerModel; effects: any[] }>(() => {
     calibration,
     spray,
     pacman,
-    wordpond
+    wordpond,
+    network
   }
 
-  return { model, effects: [] }
+  return {
+    model,
+    effects: [
+      IO.IO<TVMsg>(() => ({
+        type: 'Network',
+        msg: { type: 'Enable', url: 'wss://192.168.7.195:8081' }
+      }))
+    ]
+  }
 })

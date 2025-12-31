@@ -1,8 +1,8 @@
 import { IO, fx } from 'algebraic-fx'
-import { socketStream } from '@/effects/network'
+// import { socketStream } from '@/effects/network'
 import type { TVEnv } from '../env'
 import type { TVMsg } from '../types'
-import { sendMsg } from '@/effects/network'
+// import { sendMsg } from '@/effects/network'
 import { MessageType } from '@shared/types'
 
 /**
@@ -11,33 +11,33 @@ import { MessageType } from '@shared/types'
  * This must run AFTER the WebSocket is actually open.
  * If ws.readyState !== OPEN, we attach a one-time "open" listener.
  */
-export const registerTVEffect = fx<TVEnv, TVMsg>((env, dispatch) => {
-  console.log('registertv', env, WebSocket.OPEN)
-  const doRegister = () => {
-    // Construct the REGISTER_TV payload
-    const msg = {
-      type: MessageType.REGISTER_TV,
-      msg: { session: env.session }
-    }
-
-    // Convert the Reader<Env, IO> → IO via env
-    const io = sendMsg(msg).run(env)
-
-    // Execute the IO immediately (safe)
-    io.run()
-  }
-
-  if (env.ws.readyState === WebSocket.OPEN) {
-    doRegister()
-  } else {
-    env.ws.addEventListener('open', doRegister, { once: true })
-  }
-
-  // Cleanup: remove listener if effect is torn down before open happens.
-  return () => {
-    env.ws.removeEventListener('open', doRegister)
-  }
-})
+// export const registerTVEffect = fx<TVEnv, TVMsg>((env, dispatch) => {
+//   console.log('registertv', env, WebSocket.OPEN)
+//   const doRegister = () => {
+//     // Construct the REGISTER_TV payload
+//     const msg = {
+//       type: MessageType.REGISTER_TV,
+//       msg: { session: env.session }
+//     }
+//
+//     // Convert the Reader<Env, IO> → IO via env
+//     const io = sendMsg(msg).run(env)
+//
+//     // Execute the IO immediately (safe)
+//     io.run()
+//   }
+//
+//   if (env.ws.readyState === WebSocket.OPEN) {
+//     doRegister()
+//   } else {
+//     env.ws.addEventListener('open', doRegister, { once: true })
+//   }
+//
+//   // Cleanup: remove listener if effect is torn down before open happens.
+//   return () => {
+//     env.ws.removeEventListener('open', doRegister)
+//   }
+// })
 // shared/orientation.ts
 // Quaternion-based pointer mapping using device's forward direction.
 // User calibrates by pointing phone at screen center, then tilts naturally.
@@ -146,30 +146,30 @@ export const startTickLoopIO = (dispatch: any) =>
  * Subscribes to parsed WS messages and dispatches them into the TV program.
  * Automatically cleans up on screen/program teardown.
  */
-export const socketEffect = fx<TVEnv, TVMsg>((env, dispatch) => {
-  const stream = socketStream<TVMsg>(env.ws)
-  console.log('stream')
-  const unsubscribe = stream.subscribe({
-    next(reader) {
-      console.log('nexct?')
-      try {
-        const io = reader.run(env)
-        Promise.resolve(io.run()).then((msg) => {
-          if (msg) dispatch(msg)
-        })
-      } catch (err) {
-        console.error('[tv.socketEffect] error decoding ws message', err)
-      }
-    },
-    error(err) {
-      console.error('[tv.socketEffect] WebSocket error', err)
-    },
-    complete() {
-      console.warn('[tv.socketEffect] WebSocket closed')
-    }
-  })
-
-  return () => {
-    unsubscribe()
-  }
-})
+// export const socketEffect = fx<TVEnv, TVMsg>((env, dispatch) => {
+//   const stream = socketStream<TVMsg>(env.ws)
+//   console.log('stream')
+//   const unsubscribe = stream.subscribe({
+//     next(reader) {
+//       console.log('nexct?')
+//       try {
+//         const io = reader.run(env)
+//         Promise.resolve(io.run()).then((msg) => {
+//           if (msg) dispatch(msg)
+//         })
+//       } catch (err) {
+//         console.error('[tv.socketEffect] error decoding ws message', err)
+//       }
+//     },
+//     error(err) {
+//       console.error('[tv.socketEffect] WebSocket error', err)
+//     },
+//     complete() {
+//       console.warn('[tv.socketEffect] WebSocket closed')
+//     }
+//   })
+//
+//   return () => {
+//     unsubscribe()
+//   }
+// })

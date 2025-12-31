@@ -1,40 +1,40 @@
 PODS:
-  - Capacitor (7.4.4):
+  - Capacitor (8.0.0):
     - CapacitorCordova
-  - CapacitorCordova (7.4.4)
-  - CapacitorHaptics (7.0.2):
+  - CapacitorCordova (8.0.0)
+  - CapacitorHaptics (8.0.0):
     - Capacitor
   - CapacitorNativeMotion (0.1.0):
     - Capacitor
-  - CapacitorNetwork (7.0.2):
+  - CapacitorNetwork (8.0.0):
     - Capacitor
 
 DEPENDENCIES:
-  - "Capacitor (from `../../../../node_modules/.pnpm/@capacitor+ios@7.4.4_@capacitor+core@7.4.4/node_modules/@capacitor/ios`)"
-  - "CapacitorCordova (from `../../../../node_modules/.pnpm/@capacitor+ios@7.4.4_@capacitor+core@7.4.4/node_modules/@capacitor/ios`)"
-  - "CapacitorHaptics (from `../../../../node_modules/.pnpm/@capacitor+haptics@7.0.2_@capacitor+core@7.4.4/node_modules/@capacitor/haptics`)"
-  - "CapacitorNativeMotion (from `../../../../node_modules/.pnpm/capacitor-native-motion@file+..+..+capacitor-native-motion_@capacitor+core@7.4.4/node_modules/capacitor-native-motion`)"
-  - "CapacitorNetwork (from `../../../../node_modules/.pnpm/@capacitor+network@7.0.2_@capacitor+core@7.4.4/node_modules/@capacitor/network`)"
+  - "Capacitor (from `../../../../node_modules/.pnpm/@capacitor+ios@8.0.0_@capacitor+core@8.0.0/node_modules/@capacitor/ios`)"
+  - "CapacitorCordova (from `../../../../node_modules/.pnpm/@capacitor+ios@8.0.0_@capacitor+core@8.0.0/node_modules/@capacitor/ios`)"
+  - "CapacitorHaptics (from `../../../../node_modules/.pnpm/@capacitor+haptics@8.0.0_@capacitor+core@8.0.0/node_modules/@capacitor/haptics`)"
+  - "CapacitorNativeMotion (from `../../../../node_modules/.pnpm/capacitor-native-motion@file+..+..+capacitor-native-motion_@capacitor+core@8.0.0/node_modules/capacitor-native-motion`)"
+  - "CapacitorNetwork (from `../../../../node_modules/.pnpm/@capacitor+network@8.0.0_@capacitor+core@8.0.0/node_modules/@capacitor/network`)"
 
 EXTERNAL SOURCES:
   Capacitor:
-    :path: "../../../../node_modules/.pnpm/@capacitor+ios@7.4.4_@capacitor+core@7.4.4/node_modules/@capacitor/ios"
+    :path: "../../../../node_modules/.pnpm/@capacitor+ios@8.0.0_@capacitor+core@8.0.0/node_modules/@capacitor/ios"
   CapacitorCordova:
-    :path: "../../../../node_modules/.pnpm/@capacitor+ios@7.4.4_@capacitor+core@7.4.4/node_modules/@capacitor/ios"
+    :path: "../../../../node_modules/.pnpm/@capacitor+ios@8.0.0_@capacitor+core@8.0.0/node_modules/@capacitor/ios"
   CapacitorHaptics:
-    :path: "../../../../node_modules/.pnpm/@capacitor+haptics@7.0.2_@capacitor+core@7.4.4/node_modules/@capacitor/haptics"
+    :path: "../../../../node_modules/.pnpm/@capacitor+haptics@8.0.0_@capacitor+core@8.0.0/node_modules/@capacitor/haptics"
   CapacitorNativeMotion:
-    :path: "../../../../node_modules/.pnpm/capacitor-native-motion@file+..+..+capacitor-native-motion_@capacitor+core@7.4.4/node_modules/capacitor-native-motion"
+    :path: "../../../../node_modules/.pnpm/capacitor-native-motion@file+..+..+capacitor-native-motion_@capacitor+core@8.0.0/node_modules/capacitor-native-motion"
   CapacitorNetwork:
-    :path: "../../../../node_modules/.pnpm/@capacitor+network@7.0.2_@capacitor+core@7.4.4/node_modules/@capacitor/network"
+    :path: "../../../../node_modules/.pnpm/@capacitor+network@8.0.0_@capacitor+core@8.0.0/node_modules/@capacitor/network"
 
 SPEC CHECKSUMS:
-  Capacitor: 09d9ff8e9618e8c4b3cab2bbee34a17215dd2fef
-  CapacitorCordova: bf648a636f3c153f652d312ae145fb508b6ffced
-  CapacitorHaptics: 09d96bcb5a2b74ede8fd039b4cdf58fc43dcacf1
+  Capacitor: 79e40e5e76f852965dce30406c65253fa154e24a
+  CapacitorCordova: 5dc3912d25ef770a3fe0f431bb65c9fbfa2e92f9
+  CapacitorHaptics: 7a77ce744c4b516b3ffd7f8c96d3de574d77b898
   CapacitorNativeMotion: 31640f5be11f02f792dbccecaf1199a5094f204b
-  CapacitorNetwork: 9b9eaeb417ec0ffa22e2bc33a4c71df10e1d6f06
+  CapacitorNetwork: e03b0c02b4a9d76e58c19e15e9e0c200929529b9
 
-PODFILE CHECKSUM: 2bc852f9c4f12fc605200506d315036bbf088c33
+PODFILE CHECKSUM: 124df3d762e9ec0e069fb68238e8b2ce29025ad6
 
 COCOAPODS: 1.16.2

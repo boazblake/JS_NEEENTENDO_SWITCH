@@ -15,5 +15,4 @@ subjectAltName = @alts
 DNS.1 = localhost
 DNS.2 = wordpond.local
 IP.1 = 127.0.0.1
-IP.2 = 192.168.11.20
-IP.3 = 100.97.105.4
+IP.2 = 192.168.7.195

@@ -78,8 +78,11 @@ export const view = (
     default:
       content = Lobby.view(
         model.lobby,
-        (type: string, data: any = {}) =>
-          dispatch(createMsg(type, { ...data, screen: 'lobby' })),
+        (payload: Payload) => {
+          return dispatch(
+            createMsg(payload.type, { ...payload.msg, screen: 'lobby' })
+          )
+        },
         model
       )
   }

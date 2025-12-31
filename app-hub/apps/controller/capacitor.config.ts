@@ -7,9 +7,16 @@ const config: CapacitorConfig = {
   bundledWebRuntime: true,
   server: {
     url: 'https://192.168.7.195:5174/',
-    cleartext: false,
+    cleartext: true,
     androidScheme: 'https',
     iosScheme: 'capacitor'
+  },
+
+  ios: {
+    infoPlist: {
+      NSLocalNetworkUsageDescription:
+        'Wordpond needs access to your local network to discover TVs and connect to the relay.'
+    }
   }
 }
 

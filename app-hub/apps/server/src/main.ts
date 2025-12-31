@@ -101,6 +101,7 @@ wss.on('connection', (socket) => {
     }
 
     const { type, msg } = payload
+    console.log(payload)
     if (!type || !msg) return
     const session = msg.session
 

@@ -17,7 +17,9 @@
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fast": "oxlint . --ext .ts,.tsx",
     "format": "prettier --write .",
-    "build": "vite build",
+    "build": "run-p build:tv build:controller",
+    "build:tv": "npm --workspace=@edu-games/tv run build",
+    "build:controller": "npm --workspace=@edu-games/controller run build",
     "preview": "vite preview"
   },
   "dependencies": {

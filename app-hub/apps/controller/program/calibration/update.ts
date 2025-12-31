@@ -16,7 +16,7 @@ export const update = (msg: Msg, model: Model, dispatch: Dispatch) => {
       const next = { ...model, quaternion, gravity, rotation, timestamp }
       const { session, id } = env
       // child wraps outbound calibration data for its parent
-      const screenOut = IO(() =>
+      const screenOut = IO.IO(() =>
         dispatch(
           wrapScreenOut(Screen.CALIBRATION, {
             session,
