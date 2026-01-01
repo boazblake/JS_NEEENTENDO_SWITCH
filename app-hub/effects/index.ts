@@ -1,2 +1,3 @@
-export * from './network.js'
-export * from './global.js'
+import { networkEffect } from './network'
+
+export const effects = [networkEffect]

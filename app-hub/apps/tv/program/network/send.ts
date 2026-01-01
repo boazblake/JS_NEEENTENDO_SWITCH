@@ -4,7 +4,7 @@ import type { NetworkMsg } from './types'
 import type { TVEnv } from '../env'
 
 export const send = (wire: NetworkMsg & { type: 'Send' }) =>
-  IO<TVEnv>(() => {
+  IO.IO<TVEnv>(() => {
     return {
       _tag: 'NetworkEffect',
       wire

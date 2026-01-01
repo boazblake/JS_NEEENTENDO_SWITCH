@@ -1,30 +1,33 @@
-// tv/effects/socket.ts
-import { Reader, IO, type Effect } from 'algebraic-fx'
-import {
-  socketStream,
-  readBlobText,
-  readArrayBufferText
-} from '@/effects/network'
-import type { TVEnv } from '../program/env'
-import type { TVEnv } from '../program/env'
-import type { TVMsg } from '../program/types'
+import type { Effect } from 'algebraic-fx'
 
-export const socketEffect: Effect<TVEnv, TVMsg> = {
+export const socketEffect: Effect<any, any> = {
   run(env, dispatch) {
-    const stream = socketStream<TVMsg>(env.ws)
+    const ws = env.ws
+    setActiveSocket(ws)
 
-    const unsubscribe = stream.subscribe({
-      next(reader) {
-        const io = reader.run(env)
-        Promise.resolve(io.run()).then((msg) => {
-          if (msg) dispatch(msg)
-        })
-      },
-      error(err) {
-        console.error('socket error', err)
-      }
-    })
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(String(e.data))
+      dispatch(msg)
+    }
 
-    return () => unsubscribe()
+    ws.onerror = (e) => console.error('socket error', e)
+    ws.onclose = () => clearActiveSocket()
+
+    return () => {
+      ws.close()
+      clearActiveSocket()
+    }
   }
 }
+
+let activeSocket: WebSocket | null = null
+
+export const setActiveSocket = (ws: WebSocket) => {
+  activeSocket = ws
+}
+
+export const clearActiveSocket = () => {
+  activeSocket = null
+}
+
+export const getActiveSocket = () => activeSocket

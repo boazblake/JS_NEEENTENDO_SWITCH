@@ -6,10 +6,12 @@ export type NetworkEffect = {
   msg: WireMsg
 }
 
-export const send = (msg: WireMsg) =>
-  IO.IO(
+export const send = (msg: WireMsg) => {
+  console.log('send', msg)
+  return IO.IO(
     (): NetworkEffect => ({
       _tag: 'NetworkSend',
       msg
     })
   )
+}

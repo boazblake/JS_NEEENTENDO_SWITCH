@@ -1,14 +1,23 @@
 /** --------------------------------------------------------------------------
- *  Core payload
+ *  Core payload (single wire shape)
  *  -------------------------------------------------------------------------- */
 
 export type Payload<
   TType extends string = string,
-  TMsg extends Record<string, any> = Record<string, any>
+  TMsg extends Record<string, unknown> = Record<string, unknown>
 > = {
   type: TType
   msg: TMsg
-  t?: number // optional timestamp (ms)
+  t: number
+}
+
+/** --------------------------------------------------------------------------
+ *  Roles
+ *  -------------------------------------------------------------------------- */
+
+export enum Role {
+  TV = 'TV',
+  CONTROLLER = 'CONTROLLER'
 }
 
 /** --------------------------------------------------------------------------
@@ -16,113 +25,144 @@ export type Payload<
  *  -------------------------------------------------------------------------- */
 
 export enum Screen {
-  MENU = 'menu',
-  CALIBRATION = 'calibration',
-  SPRAYCAN = 'spraycan',
-  WORDPOND = 'wordpond'
+  LOBBY = 'LOBBY',
+  MENU = 'MENU',
+  CALIBRATION = 'CALIBRATION',
+  SPRAYCAN = 'SPRAYCAN',
+  WORDPOND = 'WORDPOND',
+  PACMAN = 'PACMAN',
+  DRIVING = 'DRIVING'
 }
 
 /** --------------------------------------------------------------------------
- *  System & session message types (namespaced)
+ *  Network message types (UPPER_SNAKE)
  *  -------------------------------------------------------------------------- */
 
 export enum MessageType {
   // Relay lifecycle
-  RELAY_HELLO = 'system.relay.hello',
-  RELAY_ACK = 'system.relay.ack',
-  RELAY_ERROR = 'system.relay.error',
-
-  // Session / registration
-  REGISTER_TV = 'session.register.tv',
-  REGISTER_PLAYER = 'session.register.player',
-  ACK_TV = 'session.ack.tv',
-  ACK_PLAYER = 'session.ack.player',
+  RELAY_HELLO = 'RELAY_HELLO',
+  RELAY_ERROR = 'RELAY_ERROR',
 
   // Discovery
-  TV_LIST = 'tv.list',
-  NO_SESSION = 'session.no-session',
+  TV_LIST = 'TV_LIST',
 
-  // Navigation / screen selection
-  NAVIGATE = 'ui.navigate',
-  SCREEN_SELECTED = 'ui.screen-selected',
+  // Registration / session
+  REGISTER = 'REGISTER',
+  REGISTERED = 'REGISTERED',
+  REJECTED = 'REJECTED',
 
-  // Motion / calibration
-  CALIB_UPDATE = 'motion.calibration-update',
+  // Session events
+  PLAYER_JOINED = 'PLAYER_JOINED',
+  PLAYER_LEFT = 'PLAYER_LEFT',
 
-  // Pointer and hover interactions
-  POINTER_HOVER = 'pointer.hover',
-  POINTER_CLICKED = 'pointer.clicked',
-
-  // Spray-can gameplay
-  SPRAY_START = 'spray.start',
-  SPRAY_POINT = 'spray.point',
-  SPRAY_END = 'spray.end',
-
-  // Gameplay events
-  PLAYER_JOINED = 'session.player-joined',
-  PLAYER_LEFT = 'session.player-left',
+  // Navigation
+  NAVIGATE = 'NAVIGATE',
 
   // Utility
-  PING = 'system.ping',
-  PONG = 'system.pong'
+  PING = 'PING',
+  PONG = 'PONG',
+
+  // Motion / calibration
+  CALIB_UPDATE = 'CALIB_UPDATE',
+
+  // Spray
+  SPRAY_START = 'SPRAY_START',
+  SPRAY_POINT = 'SPRAY_POINT',
+  SPRAY_END = 'SPRAY_END'
 }
 
 /** --------------------------------------------------------------------------
- *  Word-Pond cross-device message namespace (namespaced strings)
+ *  Canonical network payloads (typed)
  *  -------------------------------------------------------------------------- */
 
-export const WordPondMsg = {
-  NET_UPDATE: 'wordpond.net' as const, // controller → tv
-  SHAKE: 'wordpond.shake' as const, // controller → tv
-  STATE: 'wordpond.state' as const // tv → controller
+export type RelayHello = Payload<
+  MessageType.RELAY_HELLO,
+  {
+    message: string
+  }
+>
+
+export type RelayError = Payload<
+  MessageType.RELAY_ERROR,
+  {
+    reason: string
+  }
+>
+
+export type TVList = Payload<
+  MessageType.TV_LIST,
+  {
+    list: string[]
+  }
+>
+
+export type Register = Payload<
+  MessageType.REGISTER,
+  {
+    role: Role
+    id: string
+    session?: string
+    name?: string
+  }
+>
+
+export type Registered = Payload<
+  MessageType.REGISTERED,
+  {
+    role: Role
+    id: string
+    session: string
+  }
+>
+
+export type Rejected = Payload<
+  MessageType.REJECTED,
+  {
+    role: Role
+    id?: string
+    reason: string
+    session?: string
+  }
+>
+
+export type PlayerJoined = Payload<
+  MessageType.PLAYER_JOINED,
+  {
+    session: string
+    id: string
+    name: string
+  }
+>
+
+export type PlayerLeft = Payload<
+  MessageType.PLAYER_LEFT,
+  {
+    session: string
+    id?: string
+    reason?: string
+  }
+>
+
+export type Navigate = Payload<
+  MessageType.NAVIGATE,
+  {
+    session: string
+    screen: Screen
+  }
+>
+
+export type Ping = Payload<MessageType.PING, {}>
+export type Pong = Payload<MessageType.PONG, {}>
+
+/** --------------------------------------------------------------------------
+ *  WordPond namespace (keep, but UPPER_SNAKE keys)
+ *  -------------------------------------------------------------------------- */
+
+export enum WordPondType {
+  WORDPOND_NET_UPDATE = 'WORDPOND_NET_UPDATE',
+  WORDPOND_SHAKE = 'WORDPOND_SHAKE',
+  WORDPOND_STATE = 'WORDPOND_STATE'
 }
-
-export type WordPondMsgType =
-  | (typeof WordPondMsg)['NET_UPDATE']
-  | (typeof WordPondMsg)['SHAKE']
-  | (typeof WordPondMsg)['STATE']
-
-/** --------------------------------------------------------------------------
- *  Canonical Word-Pond payloads (still fit Payload shape)
- *  -------------------------------------------------------------------------- */
-
-export type WordPondNetUpdate = Payload<
-  (typeof WordPondMsg)['NET_UPDATE'],
-  {
-    screen: Screen.WORDPOND
-    session: string
-    id: string // controller id
-    x: number // normalized 0..1
-    y: number // normalized 0..1
-  }
->
-
-export type WordPondShake = Payload<
-  (typeof WordPondMsg)['SHAKE'],
-  {
-    screen: Screen.WORDPOND
-    session: string
-    id: string // controller id
-  }
->
-
-export type WordPondStatePayload = Payload<
-  (typeof WordPondMsg)['STATE'],
-  {
-    screen: Screen.WORDPOND
-    session: string
-    state: WordPondState
-  }
->
-
-export type WordPondPayload =
-  | WordPondNetUpdate
-  | WordPondShake
-  | WordPondStatePayload
-
-/** --------------------------------------------------------------------------
- *  Shared game-state model for Word-Pond (TV + controllers)
- *  -------------------------------------------------------------------------- */
 
 export type Letter = {
   id: string
@@ -131,16 +171,16 @@ export type Letter = {
   y: number
   vx: number
   vy: number
-  caughtBy: string | null // player id
+  caughtBy: string | null
 }
 
 export type Pond = {
-  id: string // player id
+  id: string
   letters: string[]
 }
 
 export type Net = {
-  id: string // player id
+  id: string
   x: number
   y: number
 }
@@ -153,8 +193,55 @@ export type WordPondState = {
   targetWord: string
 }
 
+export type WordPondNetUpdate = Payload<
+  WordPondType.WORDPOND_NET_UPDATE,
+  {
+    screen: Screen.WORDPOND
+    session: string
+    id: string
+    x: number
+    y: number
+  }
+>
+
+export type WordPondShake = Payload<
+  WordPondType.WORDPOND_SHAKE,
+  {
+    screen: Screen.WORDPOND
+    session: string
+    id: string
+  }
+>
+
+export type WordPondStatePayload = Payload<
+  WordPondType.WORDPOND_STATE,
+  {
+    screen: Screen.WORDPOND
+    session: string
+    state: WordPondState
+  }
+>
+
+export type NetworkMessage =
+  | RelayHello
+  | RelayError
+  | TVList
+  | Register
+  | Registered
+  | Rejected
+  | PlayerJoined
+  | PlayerLeft
+  | Navigate
+  | Ping
+  | Pong
+  | WordPondNetUpdate
+  | WordPondShake
+  | WordPondStatePayload
+
+export type AnyPayload = Payload<string, Record<string, unknown>>
+
 /** --------------------------------------------------------------------------
- *  Global color palette shared by apps
+ *  Global color palette shared by apps (UI only)
  *  -------------------------------------------------------------------------- */
 
 export const COLORS: { color: string; hex: string }[] = [
@@ -169,47 +256,50 @@ export const COLORS: { color: string; hex: string }[] = [
 ]
 
 /** --------------------------------------------------------------------------
- *  Common player state
+ *  WordPond compatibility aliases (TEMPORARY)
  *  -------------------------------------------------------------------------- */
 
-export enum PlayerStatus {
-  IDLE = 'idle',
-  CONNECTED = 'connected'
-}
+export const WordPondMsg = {
+  NET_UPDATE: WordPondType.WORDPOND_NET_UPDATE,
+  SHAKE: WordPondType.WORDPOND_SHAKE,
+  STATE: WordPondType.WORDPOND_STATE
+} as const
+
+export type WordPondMsgType =
+  | (typeof WordPondMsg)['NET_UPDATE']
+  | (typeof WordPondMsg)['SHAKE']
+  | (typeof WordPondMsg)['STATE']
 
 /** --------------------------------------------------------------------------
- *  Root network union (optional, if you want one place to type all WS msgs)
+ *  Message routing domains
  *  -------------------------------------------------------------------------- */
 
-// All cross-device messages that actually travel over the relay.
-// Extend this union as you add more app-level namespaced messages.
-export type NetworkMessage =
-  // System / relay / session / navigation
-  | Payload<MessageType.RELAY_HELLO, any>
-  | Payload<MessageType.RELAY_ACK, any>
-  | Payload<MessageType.RELAY_ERROR, any>
-  | Payload<MessageType.REGISTER_TV, any>
-  | Payload<MessageType.REGISTER_PLAYER, any>
-  | Payload<MessageType.ACK_TV, any>
-  | Payload<MessageType.ACK_PLAYER, any>
-  | Payload<MessageType.TV_LIST, any>
-  | Payload<MessageType.NO_SESSION, any>
-  | Payload<MessageType.NAVIGATE, any>
-  | Payload<MessageType.SCREEN_SELECTED, any>
-  | Payload<MessageType.CALIB_UPDATE, any>
-  | Payload<MessageType.POINTER_HOVER, any>
-  | Payload<MessageType.POINTER_CLICKED, any>
-  | Payload<MessageType.SPRAY_START, any>
-  | Payload<MessageType.SPRAY_POINT, any>
-  | Payload<MessageType.SPRAY_END, any>
-  | Payload<MessageType.PLAYER_JOINED, any>
-  | Payload<MessageType.PLAYER_LEFT, any>
-  | Payload<MessageType.PING, any>
-  | Payload<MessageType.PONG, any>
-  // Word-Pond cross-device messages
-  | WordPondNetUpdate
-  | WordPondShake
-  | WordPondStatePayload
+export enum MessageDomain {
+  NETWORK = 'NETWORK',
+  LOBBY = 'LOBBY',
+  GAME = 'GAME'
+}
 
-// If you still want a very loose "anything WS" type for the server, keep:
-export type AnyPayload = Payload<string, Record<string, any>>
+/**
+ * A routed message type is a dot-delimited path.
+ * The first segment MUST be a MessageDomain.
+ *
+ * Examples:
+ *  - NETWORK.REGISTER
+ *  - LOBBY.SET_TV_LIST
+ *  - GAME.WORDPOND.NET_UPDATE
+ */
+export type RoutedType = `${MessageDomain}.${string}`
+
+/** --------------------------------------------------------------------------
+ *  Canonical payload (unchanged shape)
+ *  -------------------------------------------------------------------------- */
+
+export type Payload<
+  TType extends string = RoutedType,
+  TMsg extends Record<string, unknown> = Record<string, unknown>
+> = {
+  type: TType
+  msg: TMsg
+  t: number
+}

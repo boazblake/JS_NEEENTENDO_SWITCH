@@ -1,4 +1,5 @@
 export * from './types'
+export * from './messages'
 export * from './init'
 export * from './update'
 export * from './subs'

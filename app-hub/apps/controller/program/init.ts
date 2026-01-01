@@ -2,6 +2,7 @@
 import { IO } from 'algebraic-fx'
 import type { ControllerModel } from './types'
 
+import { send } from './network'
 import { init as lobbyInit } from './lobby/init'
 import { init as menuInit } from './menu/init'
 import { init as calibrationInit } from './calibration/init'
@@ -41,9 +42,9 @@ export const init = IO.IO<{ model: ControllerModel; effects: any[] }>(() => {
   return {
     model,
     effects: [
-      IO.IO<TVMsg>(() => ({
-        type: 'Network',
-        msg: { type: 'Enable', url: 'wss://192.168.7.195:8081' }
+      IO.IO(() => ({
+        type: 'Enable',
+        url: 'wss://192.168.7.195:8081'
       }))
     ]
   }

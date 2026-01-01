@@ -1,42 +1,45 @@
 import { sub } from 'algebraic-fx'
-import { decode, isWireMsg } from '@shared/protocol'
-import type { NetworkMsg, NetworkModel } from './types'
 import type { TVEnv } from '../env'
-
-import { MessageType } from '@shared/types'
+import type { NetworkModel } from './types'
+import type { Payload } from '@shared/types'
+import { registerSocket, clearSocket } from '@/effects/network'
 
 export const wsSub = (model: NetworkModel) => {
   if (!model.url) return []
 
   return [
-    sub<TVEnv, NetworkMsg>('tv:ws', (env, dispatch) => {
+    sub<TVEnv, Payload>('tv:ws', (env, dispatch) => {
       const ws = env.makeWebSocket(model.url)
 
-      ws.onopen = () => {
-        console.log('[tv] ws open, registering', env.session)
+      registerSocket(ws)
 
+      ws.onopen = () => {
         ws.send(
           JSON.stringify({
-            type: MessageType.REGISTER_TV,
-            msg: { session: env.session },
-            t: Date.now()
+            type: 'NETWORK.REGISTER',
+            msg: {
+              role: 'TV',
+              id: env.session,
+              session: env.session
+            }
           })
         )
-
-        dispatch({ type: 'Connected' })
       }
 
       ws.onmessage = (e) => {
-        dispatch({
-          type: 'Inbound',
-          msg: JSON.parse(String(e.data))
-        })
+        dispatch(JSON.parse(String(e.data)) as Payload)
       }
 
-      ws.onclose = () => dispatch({ type: 'Disconnected' })
-      ws.onerror = () => dispatch({ type: 'Disconnected' })
+      ws.onclose = () => clearSocket()
 
-      return () => ws.close()
+      ws.onerror = () => {
+        clearActiveSocket()
+      }
+
+      return () => {
+        ws.close()
+        clearActiveSocket()
+      }
     })
   ]
 }

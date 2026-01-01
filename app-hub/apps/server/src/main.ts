@@ -2,19 +2,28 @@ import { WebSocketServer, WebSocket } from 'ws'
 import https from 'https'
 import path from 'path'
 import { readFileSync } from 'fs'
-import { MessageType, Screen, type Payload } from '../../../shared/src/types.ts'
+
+import type { Payload } from '../../../shared/src/types'
+import { splitRoute } from '../../../shared/src/utils'
+import {
+  NetworkType,
+  LobbyType,
+  type AnyWirePayload,
+  type RegisterMsg,
+  type Role
+} from '../../../shared/src/network/messages'
 
 // ---------------------------------------------------------------------------
 //  Session tracking
 // ---------------------------------------------------------------------------
 
-interface Session {
+type Session = {
   tv: WebSocket
   controllers: Set<WebSocket>
 }
 
 const sessions = new Map<string, Session>()
-const pendingControllers = new Set<WebSocket>()
+const pending = new Set<WebSocket>()
 
 // ---------------------------------------------------------------------------
 //  HTTPS + WSS
@@ -28,7 +37,7 @@ const server = https.createServer({ key, cert })
 const wss = new WebSocketServer({ server })
 
 server.listen(8081, '0.0.0.0', () =>
-  console.info('[relay] HTTPS+WSS listening on wss://192.168.7.195:8081')
+  console.info('[relay] HTTPS+WSS listening on wss://0.0.0.0:8081')
 )
 
 // ---------------------------------------------------------------------------
@@ -44,189 +53,214 @@ const safeSend = (ws: WebSocket | undefined, payload: Payload) => {
 
 const now = () => Date.now()
 
-const relayHello = (socket: WebSocket): void => {
-  safeSend(socket, {
-    type: MessageType.RELAY_HELLO,
-    msg: { t: now(), message: 'connected' },
+const reject = (ws: WebSocket, reason: any, session?: string) => {
+  safeSend(ws, {
+    type: NetworkType.REJECT,
+    msg: { reason, session },
     t: now()
   })
 }
 
-// Send updated TV list to all controllers
-const broadcastTVList = (): void => {
-  const tvList = Array.from(sessions.keys())
-
-  const payload: Payload = {
-    type: MessageType.TV_LIST,
-    msg: {
-      screen: Screen.LOBBY,
-      list: tvList
-    },
+const sendTvListTo = (ws: WebSocket) => {
+  safeSend(ws, {
+    type: LobbyType.TV_LIST,
+    msg: { list: Array.from(sessions.keys()) },
     t: now()
-  }
+  })
+}
 
-  for (const c of pendingControllers) safeSend(c, payload)
+const broadcastTvList = () => {
+  for (const ws of pending) sendTvListTo(ws)
   for (const s of sessions.values())
-    for (const c of s.controllers) safeSend(c, payload)
+    for (const c of s.controllers) sendTvListTo(c)
+}
+
+const closeAllControllers = (s: Session, code: number, reason: string) => {
+  for (const c of s.controllers) {
+    try {
+      c.close(code, reason)
+    } catch {
+      // ignore
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
-//  Core WS Handling
+//  Registration
+// ---------------------------------------------------------------------------
+
+const handleRegister = (socket: WebSocket, msg: RegisterMsg) => {
+  console.log('wtf')
+  const role: Role | undefined = msg.role
+  const id: string | undefined = msg.id
+  const session: string | undefined = msg.session
+
+  if (!role) return reject(socket, 'MISSING_ROLE')
+  if (!id) return reject(socket, 'MISSING_ID')
+
+  if (role === 'TV') {
+    if (!session) return reject(socket, 'MISSING_SESSION')
+
+    const old = sessions.get(session)
+    if (old?.tv && old.tv !== socket) {
+      try {
+        old.tv.close(1012, 'TV replaced')
+      } catch {
+        // ignore
+      }
+      closeAllControllers(old, 1012, 'TV replaced')
+    }
+    sessions.set(session, { tv: socket, controllers: new Set() })
+    pending.delete(socket)
+
+    safeSend(socket, {
+      type: NetworkType.ACK,
+      msg: { role: 'TV', session },
+      t: now()
+    })
+
+    console.info(`[relay] TV registered session=${session} id=${id}`)
+    broadcastTvList()
+    return
+  }
+
+  if (role === 'CONTROLLER') {
+    if (!session) return reject(socket, 'MISSING_SESSION')
+
+    const s = sessions.get(session)
+    if (!s) return reject(socket, 'NO_SESSION', session)
+
+    s.controllers.add(socket)
+    pending.delete(socket)
+
+    safeSend(socket, {
+      type: NetworkType.ACK,
+      msg: { role: 'CONTROLLER', session },
+      t: now()
+    })
+
+    // Notify TV a controller joined (keep this as a plain forwardable payload)
+    safeSend(s.tv, {
+      type: 'SESSION.PLAYER_JOINED',
+      msg: { session, id, name: msg.name ?? 'Player' },
+      t: now()
+    })
+
+    console.info(`[relay] Controller joined session=${session} id=${id}`)
+  }
+}
+
+// ---------------------------------------------------------------------------
+//  WS Handling
 // ---------------------------------------------------------------------------
 
 wss.on('connection', (socket) => {
-  pendingControllers.add(socket)
-
-  relayHello(socket)
-
-  // Immediately broadcast TV list
-  safeSend(socket, {
-    type: MessageType.TV_LIST,
-    msg: { screen: Screen.LOBBY, list: Array.from(sessions.keys()) },
-    t: now()
-  })
+  pending.add(socket)
+  // Always provide discovery immediately
+  sendTvListTo(socket)
 
   socket.on('message', (raw) => {
-    let payload: Payload
+    let payload: AnyWirePayload
     try {
       payload = JSON.parse(raw.toString())
-      // console.log(payload)
     } catch {
-      safeSend(socket, {
-        type: MessageType.RELAY_ERROR,
-        msg: { reason: 'INVALID_JSON' },
-        t: now()
-      })
+      reject(socket, 'INVALID_JSON')
       return
     }
 
-    const { type, msg } = payload
     console.log(payload)
-    if (!type || !msg) return
-    const session = msg.session
+    if (
+      !payload ||
+      typeof payload.type !== 'string' ||
+      typeof payload.msg !== 'object' ||
+      payload.msg === null
+    ) {
+      reject(socket, 'UNKNOWN')
+      return
+    }
+    // Back-compat: support your current string enums during transition
+    // session.register.tv -> treat as NETWORK.REGISTER role=TV
+    // session.register.player -> treat as NETWORK.REGISTER role=CONTROLLER
+    if (payload.type === 'session.register.tv') {
+      const m: any = payload.msg
+      return handleRegister(socket, {
+        role: 'TV',
+        id: m.session ?? 'TV',
+        session: m.session
+      })
+    }
 
-    // ---------------- TV REGISTER ------------------
-    if (type === MessageType.REGISTER_TV) {
-      if (!session) {
-        safeSend(socket, {
-          type: MessageType.RELAY_ERROR,
-          msg: { reason: 'MISSING_SESSION' },
-          t: now()
-        })
+    if (payload.type === 'session.register.player') {
+      const m: any = payload.msg
+      return handleRegister(socket, {
+        role: 'CONTROLLER',
+        id: m.id ?? 'CONTROLLER',
+        session: m.session,
+        name: m.name
+      })
+    }
+
+    const { domain, rest } = splitRoute(payload.type)
+
+    // Core network control
+    if (domain === 'NETWORK') {
+      if (rest === 'REGISTER') {
+        return handleRegister(socket, payload.msg as any)
+      }
+
+      if (rest === 'PING') {
+        safeSend(socket, { type: NetworkType.PONG, msg: {}, t: now() })
         return
       }
 
-      const old = sessions.get(session)
-      if (old?.tv && old.tv !== socket) old.tv.close(1012, 'TV replaced')
+      if (rest === 'PONG') return
+    }
 
-      sessions.set(session, { tv: socket, controllers: new Set() })
-      pendingControllers.delete(socket)
+    // Session routing for everything else: requires msg.session
+    const session = (payload.msg as any).session as string | undefined
+    if (!session) return
 
-      safeSend(socket, {
-        type: MessageType.ACK_TV,
-        msg: { session },
-        t: now()
-      })
+    const s = sessions.get(session)
+    if (!s) return
 
-      console.info(`[relay] TV registered: ${session}`)
-      broadcastTVList()
+    // TV -> controllers
+    if (socket === s.tv) {
+      for (const c of s.controllers) safeSend(c, payload as any)
       return
     }
 
-    // ---------------- CONTROLLER REGISTER ------------------
-    if (type === MessageType.REGISTER_PLAYER) {
-      if (!session) {
-        safeSend(socket, {
-          type: MessageType.NO_SESSION,
-          msg: {},
-          t: now()
-        })
+    // Controller -> TV
+    safeSend(s.tv, payload as any)
+  })
+
+  socket.on('close', () => {
+    pending.delete(socket)
+
+    for (const [session, s] of sessions) {
+      if (s.tv === socket) {
+        sessions.delete(session)
+        console.info(`[relay] TV closed session=${session}`)
+
+        for (const c of s.controllers) {
+          safeSend(c, {
+            type: 'SESSION.PLAYER_LEFT',
+            msg: { session, reason: 'TV_DISCONNECTED' },
+            t: now()
+          })
+        }
+
+        broadcastTvList()
         return
       }
 
-      const s = sessions.get(session)
-      if (!s) {
-        safeSend(socket, {
-          type: MessageType.NO_SESSION,
+      if (s.controllers.delete(socket)) {
+        console.info(`[relay] Controller left session=${session}`)
+        safeSend(s.tv, {
+          type: 'SESSION.PLAYER_LEFT',
           msg: { session },
           t: now()
         })
         return
-      }
-
-      s.controllers.add(socket)
-      pendingControllers.delete(socket)
-
-      safeSend(socket, {
-        type: MessageType.ACK_PLAYER,
-        msg: { session },
-        t: now()
-      })
-
-      safeSend(s.tv, {
-        type: MessageType.PLAYER_JOINED,
-        msg: { session, id: msg.id, name: msg.name },
-        t: now()
-      })
-
-      console.info(`[relay] Controller ${msg.id} joined ${session}`)
-      return
-    }
-
-    // ---------------- KEEP ALIVE ------------------
-    if (type === MessageType.RELAY_PONG || type === MessageType.PONG) return
-    if (type === MessageType.PING) {
-      safeSend(socket, {
-        type: MessageType.PONG,
-        msg: {},
-        t: now()
-      })
-      return
-    }
-
-    // ---------------- SESSION ROUTING ------------------
-    if (!session) return
-    const s = sessions.get(session)
-    if (!s) return
-
-    // TV → controllers
-    if (socket === s.tv) {
-      for (const c of s.controllers) safeSend(c, payload)
-      return
-    }
-
-    // Controller → TV
-    safeSend(s.tv, payload)
-  })
-
-  // -------------------------------------------------------------------------
-  // Cleanup
-  // -------------------------------------------------------------------------
-
-  socket.on('close', () => {
-    pendingControllers.delete(socket)
-
-    for (const [code, s] of sessions) {
-      if (s.tv === socket) {
-        sessions.delete(code)
-        console.info(`[relay] TV closed ${code}`)
-
-        for (const c of s.controllers)
-          safeSend(c, {
-            type: MessageType.PLAYER_LEFT,
-            msg: { session: code, reason: 'TV_DISCONNECTED' },
-            t: now()
-          })
-
-        broadcastTVList()
-      } else if (s.controllers.delete(socket)) {
-        console.info(`[relay] Controller left ${code}`)
-
-        safeSend(s.tv, {
-          type: MessageType.PLAYER_LEFT,
-          msg: { session: code },
-          t: now()
-        })
       }
     }
   })

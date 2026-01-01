@@ -13,7 +13,7 @@ export const startAutoCalibration = (
   session: string
 ) =>
   Reader((env) =>
-    IO(async () => {
+    IO.IO(async () => {
       console.log('[autoCalib] start', { id, session })
       let remove: (() => void) | undefined
 

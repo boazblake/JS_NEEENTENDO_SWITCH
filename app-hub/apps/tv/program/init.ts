@@ -30,6 +30,7 @@ export const init = IO.IO(() => {
 
     network: Network.init()
   }
+  console.log(MessageType)
 
   const effects = [
     IO.IO(() => ({
@@ -37,8 +38,12 @@ export const init = IO.IO(() => {
       msg: { type: 'Enable', url: 'wss://192.168.7.195:8081' }
     })),
     send({
-      type: MessageType.REGISTER_TV,
-      msg: { session },
+      type: 'NETWORK.REGISTER',
+      msg: {
+        role: 'TV',
+        id: session,
+        session
+      },
       t: Date.now()
     })
   ]

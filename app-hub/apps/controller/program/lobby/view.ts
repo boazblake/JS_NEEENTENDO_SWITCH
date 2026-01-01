@@ -17,16 +17,16 @@ export const view = (model: Model, dispatch: (m: Msg) => void) => {
       'ul',
       { class: 'w-full max-w-md space-y-3' },
 
-      ...model.availableTvs.map((tvId) =>
+      ...model.availableTvs.map((session) =>
         m(
           'li',
           {
-            key: tvId,
+            key: session,
             class:
               'px-6 py-4 rounded-lg bg-white/10 border border-slate-700 hover:bg-white/20 cursor-pointer',
-            onclick: () => dispatch({ type: 'SELECT_TV', msg: { tvId } })
+            onclick: () => dispatch({ type: 'SELECT_TV', msg: { session } })
           },
-          m('span', { class: 'font-semibold text-lg text-teal-400' }, tvId)
+          m('span', { class: 'font-semibold text-lg text-teal-400' }, session)
         )
       ),
 

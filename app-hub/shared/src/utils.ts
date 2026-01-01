@@ -1,36 +1,50 @@
-import {
-  MessageType,
-  Screen,
-  ScreenIn,
-  ScreenOut,
-  type Payload
-} from './types.js'
+import type { Payload } from './types'
+import { MessageDomain, MessageType, Screen } from './types'
 
-export const createMsg = (
+export const createMsg = <TMsg extends Record<string, unknown>>(
   type: MessageType | string,
-  msg: { screen?: Screen; [k: string]: any },
+  msg: TMsg,
   t = Date.now()
-): Payload => {
-  console.log(type, msg)
-  return { type, msg, t }
-}
+): Payload<string, TMsg> => ({ type, msg, t })
 
-export const withIds = (
-  p: Payload,
+export const withIds = <TMsg extends Record<string, unknown>>(
+  p: Payload<string, TMsg>,
   id?: string,
   session?: string
-): Payload => ({
+): Payload<string, TMsg & { id?: string; session?: string }> => ({
   ...p,
-  msg: { ...p.msg, id, session }
-})
-export const wrapScreenIn = (screen: Screen, payload: any): ScreenIn => ({
-  type: MessageType.SCREEN_IN,
-  screen,
-  payload
+  msg: { ...(p.msg as any), id, session }
 })
 
-export const wrapScreenOut = (screen: Screen, payload: any): ScreenOut => ({
-  type: MessageType.SCREEN_OUT,
-  screen,
-  payload
+/* ------------------------------------------------------------------
+ * Compatibility shims (TEMPORARY)
+ * ------------------------------------------------------------------ */
+
+export const wrapScreenIn = (screen: Screen, payload: any): Payload => ({
+  type: MessageType.NAVIGATE,
+  msg: { screen, ...payload },
+  t: Date.now()
 })
+
+export const wrapScreenOut = (screen: Screen, payload: any): Payload => ({
+  type: MessageType.NAVIGATE,
+  msg: { screen, ...payload },
+  t: Date.now()
+})
+
+export const splitRoute = (
+  type: string
+): {
+  domain: MessageDomain
+  rest: string
+} => {
+  const idx = type.indexOf('.')
+  if (idx === -1) {
+    return { domain: type as MessageDomain, rest: '' }
+  }
+
+  return {
+    domain: type.slice(0, idx) as MessageDomain,
+    rest: type.slice(idx + 1)
+  }
+}
