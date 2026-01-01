@@ -2,7 +2,8 @@ import { sub } from 'algebraic-fx'
 import type { TVEnv } from '../env'
 import type { NetworkModel } from './types'
 import type { Payload } from '@shared/types'
-import { registerSocket, clearSocket } from '@/effects/network'
+
+let socket: WebSocket | null = null
 
 export const wsSub = (model: NetworkModel) => {
   if (!model.url) return []
@@ -10,8 +11,7 @@ export const wsSub = (model: NetworkModel) => {
   return [
     sub<TVEnv, Payload>('tv:ws', (env, dispatch) => {
       const ws = env.makeWebSocket(model.url)
-
-      registerSocket(ws)
+      socket = ws
 
       ws.onopen = () => {
         ws.send(
@@ -25,21 +25,27 @@ export const wsSub = (model: NetworkModel) => {
           })
         )
       }
-
       ws.onmessage = (e) => {
         dispatch(JSON.parse(String(e.data)) as Payload)
       }
 
-      ws.onclose = () => clearSocket()
+      ws.onclose = () => {
+        socket = null
+      }
 
       ws.onerror = () => {
-        clearActiveSocket()
+        socket = null
       }
 
       return () => {
         ws.close()
-        clearActiveSocket()
+        socket = null
       }
     })
   ]
+}
+
+export const send = (payload: Payload) => {
+  if (!socket || socket.readyState !== WebSocket.OPEN) return
+  socket.send(JSON.stringify(payload))
 }

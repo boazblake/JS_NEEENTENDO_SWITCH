@@ -1,17 +1,25 @@
-import type { Model, Msg } from './types'
+import type { Payload } from '@shared/types'
 
-export const update = (msg: Msg, model: Model) => {
-  console.log('lobby')
-  switch (msg.type) {
+export const update = (payload: Payload | Msg, model: Model) => {
+  // Handle network payload
+  if (payload.type === 'LOBBY.TV_LIST') {
+    return {
+      model: { ...model, availableTvs: payload.msg.list },
+      effects: []
+    }
+  }
+
+  // Handle UI messages
+  switch (payload.type) {
     case 'SET_TV_LIST':
       return {
-        model: { ...model, availableTvs: msg.list },
+        model: { ...model, availableTvs: payload.list },
         effects: []
       }
 
     case 'SELECT_TV':
       return {
-        model: { ...model, selectedTv: msg.tvId },
+        model: { ...model, selectedTv: payload.tvId },
         effects: []
       }
 

@@ -4,6 +4,9 @@ import * as Network from './network'
 import { splitRoute } from '@shared/utils'
 import { MessageDomain } from '@shared/types'
 import { send } from './network'
+import { update as updateCalibration } from './calibration/update'
+import { update as updateLobby } from './lobby/update'
+import { routeByDomain } from './router'
 
 export const update = (
   payload: Payload | NetworkMsg | { type: 'SELECT_TV'; session: string },
@@ -23,44 +26,40 @@ export const update = (
     }
   }
 
-  // ---- USER INTENT ----
   if (payload.type === 'SELECT_TV') {
-    return {
-      model: { ...model, session: payload.msg.session },
-      effects: [
-        send({
-          type: 'NETWORK.REGISTER',
-          msg: {
-            role: 'CONTROLLER',
-            id: model.name,
-            session: payload.msg.session
-          },
-          t: Date.now()
-        })
-      ]
-    }
-  }
-
-  // ---- NETWORK PAYLOAD (FLAT) ----
-
-  const { domain, rest } = splitRoute(payload.type)
-
-  if (domain === MessageDomain.Network) {
-    return { model, effects: [] }
-  }
-
-  if (domain === MessageDomain.LOBBY && rest === 'TV_LIST') {
-    return {
-      model: {
-        ...model,
-        lobby: {
-          ...model.lobby,
-          availableTvs: payload.msg.list
-        }
+    send({
+      type: 'NETWORK.REGISTER',
+      msg: {
+        role: 'CONTROLLER',
+        id: model.name,
+        session: payload.msg.session
       },
+      t: Date.now()
+    })
+
+    return {
+      model: { ...model, session: payload.session },
       effects: []
     }
   }
+
+  // DOMAIN ROUTING (Phase 3)
+  return routeByDomain(payload, model, {
+    [MessageDomain.NETWORK]: () => ({ model, effects: [] }),
+
+    [MessageDomain.LOBBY]: (p, m) => {
+      const r = lobbyUpdate(p, m.lobby)
+      return { model: { ...m, lobby: r.model }, effects: r.effects }
+    },
+
+    [MessageDomain.CALIBRATION]: (p, m) => {
+      const r = updateCalibration(p, m.calibration)
+      return {
+        model: { ...m, calibration: r.model },
+        effects: r.effects
+      }
+    }
+  })
 
   return { model, effects: [] }
 }
