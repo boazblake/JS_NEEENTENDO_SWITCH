@@ -7,12 +7,13 @@ export const update = (
   model: Model,
   _dispatch: Dispatch
 ): { model: Model; effects: RawEffect<any>[] } => {
+  console.log('in calib', payload)
   if (payload.type === 'FLIP_PY') {
     return { model: { ...model, flipPY: !model.flipPY }, effects: [] }
   }
 
   if (payload.type === 'SENSOR.MOTION') {
-    const { quaternion, gravity, rotation } = payload.msg.data as any
+    const { quaternion, gravity, rotation } = payload.msg as any
     return { model, effects: [makeDrawEffect(quaternion, gravity, rotation)] }
   }
 

@@ -1,9 +1,12 @@
 import type { NetworkModel, NetworkMsg } from './types'
 
-export const update = (msg: NetworkMsg, model: NetworkModel) => {
-  switch (msg.type) {
-    case 'Enable':
-      return { model: { status: 'connecting', url: msg.url }, effects: [] }
+export const update = (payload: NetworkMsg, model: NetworkModel) => {
+  switch (payload.type) {
+    case 'ENABLE':
+      return {
+        model: { status: 'connecting', url: payload.msg.url },
+        effects: []
+      }
 
     case 'Disable':
       return { model: { status: 'disconnected', url: null }, effects: [] }

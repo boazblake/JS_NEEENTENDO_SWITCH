@@ -3,11 +3,11 @@ import type { Dispatch } from 'algebraic-fx'
 import type { NetworkMsg } from './network'
 import * as Network from './network'
 import { splitRoute } from '@shared/utils'
+import { routeByDomain } from '@shared/router'
 import { MessageDomain } from '@shared/types'
 import { send } from './network'
 import { program as Calibration } from './calibration'
 import { program as Lobby } from './lobby'
-import { routeByDomain } from './router'
 
 export const update = (
   payload: Payload | NetworkMsg | { type: 'SELECT_TV'; session: string },
@@ -58,7 +58,11 @@ export const update = (
         model.screen = 'menu'
       }
 
-      return { model, effects: [] }
+      const next = Network.update(p as NetworkMsg, m.network, dispatch)
+      return {
+        model: { ...model, network: next.model },
+        effects: next.effects
+      }
     },
 
     [MessageDomain.LOBBY]: (p, m) => {

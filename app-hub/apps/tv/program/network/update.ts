@@ -1,11 +1,20 @@
 import type { NetworkModel, NetworkMsg } from './types'
+import type { Dispatch } from 'algebraic-fx'
 
-export const update = (msg: NetworkMsg, model: NetworkModel) => {
-  console.log('net', msg)
-  switch (msg.type) {
-    case 'Enable':
+export const update = (
+  payload: NetworkMsg,
+  model: NetworkModel,
+  dispatch: Dispatch
+) => {
+  console.log('wtfff', payload)
+  switch (payload.type) {
+    case 'ENABLE':
+      console.log('net', {
+        model: { status: 'connecting', url: payload.msg.url },
+        effects: []
+      })
       return {
-        model: { status: 'connecting', url: msg.url },
+        model: { status: 'connecting', url: payload.msg.url },
         effects: []
       }
 
@@ -28,6 +37,9 @@ export const update = (msg: NetworkMsg, model: NetworkModel) => {
     case 'Inbound':
       return { model, effects: [] }
 
+    case 'SENSOR.MOTION':
+      dispatch({ type: 'CALIBRATION.SENSOR.MOTION', msg: payload.msg })
+      return { model, effects: [] }
     default:
       return { model, effects: [] }
   }

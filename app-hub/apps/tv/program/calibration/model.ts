@@ -109,6 +109,7 @@ export const makeDrawEffect = (
     const doc = env.document
     const win = env.window
 
+    console.log('draw', quaternion)
     const canvas = doc.getElementById(
       'calibrationCanvas'
     ) as HTMLCanvasElement | null

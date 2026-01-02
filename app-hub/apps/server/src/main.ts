@@ -90,7 +90,6 @@ const closeAllControllers = (s: Session, code: number, reason: string) => {
 // ---------------------------------------------------------------------------
 
 const handleRegister = (socket: WebSocket, msg: RegisterMsg) => {
-  console.log('wtf')
   const role: Role | undefined = msg.role
   const id: string | undefined = msg.id
   const session: string | undefined = msg.session

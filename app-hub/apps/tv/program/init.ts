@@ -29,8 +29,8 @@ export const init = IO.IO(() => {
 
   const effects = [
     {
-      type: 'Network',
-      msg: { type: 'Enable', url: 'wss://192.168.7.195:8081' }
+      type: 'NETWORK.ENABLE',
+      msg: { url: 'wss://192.168.7.195:8081' }
     }
   ]
 

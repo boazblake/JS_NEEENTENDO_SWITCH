@@ -1,3 +1,3 @@
 import type { NetworkMsg } from './network'
 
-export type TVMsg = { type: 'Network'; msg: NetworkMsg }
+export type TVMsg = { type: 'NETWORK'; msg: NetworkMsg }

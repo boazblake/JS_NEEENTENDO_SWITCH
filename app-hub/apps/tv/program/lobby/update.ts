@@ -1,5 +1,11 @@
 import type { Payload } from '@shared/types'
-import { MessageDomain } from '@shared/types'
+
+import {
+  MessageDomain,
+  MessageType,
+  WordPondMsg,
+  type Payload
+} from '@shared/types'
 
 export const update = (payload: Payload | Msg, model: Model) => {
   // Handle network payloads

@@ -5,6 +5,7 @@ import type { TVEnv } from './env'
 import type { TVModel, TVContext, TVMsg } from './types'
 import * as Network from './network'
 import { splitRoute } from '@shared/utils'
+import { routeByDomain } from '@shared/router'
 import { MessageDomain } from '@shared/types'
 import { orientationToXY } from './effects'
 
@@ -73,33 +74,52 @@ export const update = (msg: TVMsg, model: TVModel, dispatch: Dispatch) => {
     }
   }
 
-  /* ---------- payload ---------- */
-
   const payload = msg as Payload
   const ctx = makeCtx(model)
+  /* ---------- payload ---------- */
+  return routeByDomain(payload, model, {
+    [MessageDomain.NETWORK]: (p, m) => {
+      console.log('this', p, m)
+      const r = Network.update(p, m.network, dispatch)
+      return { model: { ...m, network: r.model }, effects: r.effects }
+    },
 
-  const { domain, type } = splitRoute(payload.type)
-  console.log(domain, type, payload.msg)
+    [MessageDomain.LOBBY]: (p, m) => {
+      const r = Lobby.update(p, m.lobby, dispatch)
+      return { model: { ...m, lobby: r.model }, effects: r.effects }
+    },
 
-  /* ---------- TV lobby routing ---------- */
-
-  if (domain === MessageDomain.LOBBY) {
-    const r = Lobby.update(payload, model.lobby)
-    return {
-      model: { ...model, lobby: r.model },
-      effects: r.effects
+    [MessageDomain.CALIBRATION]: (p, m) => {
+      const r = Calibration.update(p, m.calibration, dispatch, model)
+      return {
+        model: { ...m, calibration: r.model },
+        effects: r.effects
+      }
     }
-  }
+  })
 
-  /* ---------- Calibration routing (GAME domain) ---------- */
-
-  if (domain === MessageDomain.CALIBRATION && model.calibration) {
-    const r = Calibration.update(payload, model.calibration, ctx)
-    return {
-      model: { ...model, calibration: r.model },
-      effects: r.effects
-    }
-  }
+  // const { domain, type } = splitRoute(payload.type)
+  // console.log(domain, type, payload.msg)
+  //
+  // /* ---------- TV lobby routing ---------- */
+  //
+  // if (domain === MessageDomain.LOBBY) {
+  //   const r = Lobby.update(payload, model.lobby)
+  //   return {
+  //     model: { ...model, lobby: r.model },
+  //     effects: r.effects
+  //   }
+  // }
+  //
+  // /* ---------- Calibration routing (GAME domain) ---------- */
+  //
+  // if (domain === MessageDomain.CALIBRATION && model.calibration) {
+  //   const r = Calibration.update(payload, model.calibration, ctx)
+  //   return {
+  //     model: { ...model, calibration: r.model },
+  //     effects: r.effects
+  //   }
+  // }
 
   /* ---------- legacy root handling (unchanged) ---------- */
 

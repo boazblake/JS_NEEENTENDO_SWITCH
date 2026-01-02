@@ -67,5 +67,5 @@ export type TVContext = {
 
 export type TVMsg =
   | Payload
-  | { type: 'Network'; msg: NetworkMsg }
+  | { type: 'NETWORK'; msg: NetworkMsg }
   | { type: 'Shutdown'; msg: {} }

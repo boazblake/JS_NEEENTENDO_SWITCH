@@ -1,6 +1,6 @@
-import { splitRoute } from '@shared/utils'
-import { MessageDomain } from '@shared/types'
-import type { Payload } from '@shared/types'
+import { splitRoute } from './utils'
+import { MessageDomain } from './types'
+import type { Payload } from './types'
 
 type UpdateFn<M> = (
   payload: Payload,
@@ -23,6 +23,7 @@ export const routeByDomain = <RootModel>(
   if (!route) {
     return { model, effects: [] }
   }
-  console.log({ type, msg: payload.msg, t: payload.t }, payload)
-  return route({ type, msg: payload.msg, t: payload.t }, model)
+  let t = payload.t ?? Date.now()
+  console.log({ type, msg: payload.msg, t }, payload)
+  return route({ type, msg: payload.msg, t }, model)
 }
