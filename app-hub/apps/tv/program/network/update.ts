@@ -6,13 +6,8 @@ export const update = (
   model: NetworkModel,
   dispatch: Dispatch
 ) => {
-  console.log('wtfff', payload)
   switch (payload.type) {
     case 'ENABLE':
-      console.log('net', {
-        model: { status: 'connecting', url: payload.msg.url },
-        effects: []
-      })
       return {
         model: { status: 'connecting', url: payload.msg.url },
         effects: []
@@ -38,7 +33,7 @@ export const update = (
       return { model, effects: [] }
 
     case 'SENSOR.MOTION':
-      dispatch({ type: 'CALIBRATION.SENSOR.MOTION', msg: payload.msg })
+      dispatch({ type: 'CONTROLLERS.SENSOR.MOTION', msg: payload.msg })
       return { model, effects: [] }
     default:
       return { model, effects: [] }

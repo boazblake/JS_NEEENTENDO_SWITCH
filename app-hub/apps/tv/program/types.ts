@@ -1,5 +1,6 @@
 import type { Payload, Screen as SharedScreen } from '@shared/types'
 import type { NetworkModel, NetworkMsg } from './network'
+import type { Model as ControllersModel } from './controllers/'
 
 export type TVScreen = SharedScreen
 
@@ -38,7 +39,7 @@ export type TVModel = {
   session: string
   screen: TVScreen
 
-  controllers: Record<string, ControllerState>
+  controllers: ControllersModel
   screenW: number
   screenH: number
 
@@ -60,7 +61,7 @@ export type TVContext = {
   session: string
   screenW: number
   screenH: number
-  controllers: Record<string, ControllerState>
+  controllers: ControllersModel['controllers']
   actions: ActionRect[]
   players: PlayerState[]
 }

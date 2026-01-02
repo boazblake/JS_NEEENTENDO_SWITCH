@@ -16,6 +16,7 @@ import { program as Spray } from './spray-can'
 import { program as WordPond } from './word-pond'
 import { program as PacMan } from './pac-man'
 import { program as Driving } from './driving'
+import { program as Controllers } from './controllers'
 
 /* -------------------------------------------------- */
 /* helpers                                            */
@@ -47,7 +48,7 @@ const makeCtx = (model: TVModel): TVContext => ({
 /* -------------------------------------------------- */
 
 export const update = (msg: TVMsg, model: TVModel, dispatch: Dispatch) => {
-  console.log(msg, model)
+  console.log('tv', msg, model)
   /* ---------- network wrapper ---------- */
 
   if (msg.type === 'Network') {
@@ -79,7 +80,7 @@ export const update = (msg: TVMsg, model: TVModel, dispatch: Dispatch) => {
   /* ---------- payload ---------- */
   return routeByDomain(payload, model, {
     [MessageDomain.NETWORK]: (p, m) => {
-      console.log('this', p, m)
+      // console.log('this', p, m)
       const r = Network.update(p, m.network, dispatch)
       return { model: { ...m, network: r.model }, effects: r.effects }
     },
@@ -87,6 +88,11 @@ export const update = (msg: TVMsg, model: TVModel, dispatch: Dispatch) => {
     [MessageDomain.LOBBY]: (p, m) => {
       const r = Lobby.update(p, m.lobby, dispatch)
       return { model: { ...m, lobby: r.model }, effects: r.effects }
+    },
+
+    [MessageDomain.CONTROLLERS]: (p, m) => {
+      const r = Controllers.update(p, m.controllers, dispatch)
+      return { model: { ...m, controllers: r.model }, effects: r.effects }
     },
 
     [MessageDomain.CALIBRATION]: (p, m) => {
