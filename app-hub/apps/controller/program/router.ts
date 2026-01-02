@@ -17,12 +17,12 @@ export const routeByDomain = <RootModel>(
   model: RootModel,
   routes: Routes<RootModel>
 ) => {
-  const { domain } = splitRoute(payload.type)
+  const { domain, type } = splitRoute(payload.type)
   const route = routes[domain]
 
   if (!route) {
     return { model, effects: [] }
   }
-
-  return route(payload, model)
+  console.log({ type, msg: payload.msg, t: payload.t }, payload)
+  return route({ type, msg: payload.msg, t: payload.t }, model)
 }

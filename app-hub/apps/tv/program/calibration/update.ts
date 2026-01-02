@@ -1,30 +1,20 @@
-// calibration/update.ts
 import type { Dispatch, RawEffect } from 'algebraic-fx'
-import { MessageType } from '@shared/types'
-import type { Model, Msg } from './types'
+import type { Payload } from '@shared/types'
 import { makeDrawEffect } from './model'
 
 export const update = (
-  payload: Msg,
+  payload: Payload | { type: 'FLIP_PY' },
   model: Model,
-  dispatch: Dispatch
+  _dispatch: Dispatch
 ): { model: Model; effects: RawEffect<any>[] } => {
-  switch (payload.type) {
-    case 'FLIP_PY':
-      return {
-        model: { ...model, flipPY: !model.flipPY },
-        effects: []
-      }
-
-    case MessageType.CALIB_UPDATE: {
-      const { q, g, r } = payload.msg
-      return {
-        model,
-        effects: [makeDrawEffect(q, g, r)] // Valid RawEffect<E>
-      }
-    }
-
-    default:
-      return { model, effects: [] }
+  if (payload.type === 'FLIP_PY') {
+    return { model: { ...model, flipPY: !model.flipPY }, effects: [] }
   }
+
+  if (payload.type === 'SENSOR.MOTION') {
+    const { quaternion, gravity, rotation } = payload.msg.data as any
+    return { model, effects: [makeDrawEffect(quaternion, gravity, rotation)] }
+  }
+
+  return { model, effects: [] }
 }

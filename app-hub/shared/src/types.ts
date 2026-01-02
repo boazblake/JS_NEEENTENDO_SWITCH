@@ -277,7 +277,9 @@ export type WordPondMsgType =
 export enum MessageDomain {
   NETWORK = 'NETWORK',
   LOBBY = 'LOBBY',
-  GAME = 'GAME'
+  GAME = 'GAME',
+  SENSOR = 'SENSOR',
+  CALIBRATION = 'CALIBRATION'
 }
 
 /**

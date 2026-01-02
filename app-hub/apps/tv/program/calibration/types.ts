@@ -1,14 +1,8 @@
-import { MessageType } from '@shared/types'
-
+import type { Payload } from '@shared/types'
 
 export type Model = {
-  markers: Record<string, Marker>
+  markers: Record<string, unknown>
   flipPY: boolean
 }
 
-export type NetworkIn = {
-  type: MessageType.NETWORK_IN
-  payload: any
-}
-
-export type Msg = NetworkIn
+export type Msg = Payload | { type: 'FLIP_PY' }

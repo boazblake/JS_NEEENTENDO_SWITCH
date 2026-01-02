@@ -1,18 +1,20 @@
 import type { Payload } from '@shared/types'
+import type { Dispatch } from 'algebraic-fx'
 import type { NetworkMsg } from './network'
 import * as Network from './network'
 import { splitRoute } from '@shared/utils'
 import { MessageDomain } from '@shared/types'
 import { send } from './network'
-import { update as updateCalibration } from './calibration/update'
-import { update as updateLobby } from './lobby/update'
+import { program as Calibration } from './calibration'
+import { program as Lobby } from './lobby'
 import { routeByDomain } from './router'
 
 export const update = (
   payload: Payload | NetworkMsg | { type: 'SELECT_TV'; session: string },
-  model: Model
+  model: Model,
+  dispatch: Dispatch
 ) => {
-  console.log(payload.type)
+  console.log(payload)
   // ---- NETWORK CONTROL (THIS WAS MISSING) ----
   if (
     payload.type === 'Enable' ||
@@ -38,22 +40,34 @@ export const update = (
     })
 
     return {
-      model: { ...model, session: payload.session },
+      model: { ...model, session: payload.msg.session },
       effects: []
     }
   }
 
+  if (payload.type === 'NETWORK.SENSOR.MOTION') {
+    // console.log(payload)
+    send(payload)
+  }
+
   // DOMAIN ROUTING (Phase 3)
   return routeByDomain(payload, model, {
-    [MessageDomain.NETWORK]: () => ({ model, effects: [] }),
+    [MessageDomain.NETWORK]: (p, m) => {
+      if (p.type === 'ACK') {
+        dispatch({ type: `CALIBRATION.ENABLE_MOTION` })
+        model.screen = 'menu'
+      }
+
+      return { model, effects: [] }
+    },
 
     [MessageDomain.LOBBY]: (p, m) => {
-      const r = lobbyUpdate(p, m.lobby)
+      const r = Lobby.update(p, m.lobby, dispatch)
       return { model: { ...m, lobby: r.model }, effects: r.effects }
     },
 
     [MessageDomain.CALIBRATION]: (p, m) => {
-      const r = updateCalibration(p, m.calibration)
+      const r = Calibration.update(p, m.calibration, dispatch, model)
       return {
         model: { ...m, calibration: r.model },
         effects: r.effects

@@ -4,7 +4,8 @@ import type { WireMsg } from '@shared/protocol'
 import type { TVEnv } from './env'
 import type { TVModel, TVContext, TVMsg } from './types'
 import * as Network from './network'
-
+import { splitRoute } from '@shared/utils'
+import { MessageDomain } from '@shared/types'
 import { orientationToXY } from './effects'
 
 import { program as Lobby } from './lobby'
@@ -45,6 +46,7 @@ const makeCtx = (model: TVModel): TVContext => ({
 /* -------------------------------------------------- */
 
 export const update = (msg: TVMsg, model: TVModel, dispatch: Dispatch) => {
+  console.log(msg, model)
   /* ---------- network wrapper ---------- */
 
   if (msg.type === 'Network') {
@@ -71,10 +73,35 @@ export const update = (msg: TVMsg, model: TVModel, dispatch: Dispatch) => {
     }
   }
 
-  /* ---------- legacy payload ---------- */
+  /* ---------- payload ---------- */
 
   const payload = msg as Payload
   const ctx = makeCtx(model)
+
+  const { domain, type } = splitRoute(payload.type)
+  console.log(domain, type, payload.msg)
+
+  /* ---------- TV lobby routing ---------- */
+
+  if (domain === MessageDomain.LOBBY) {
+    const r = Lobby.update(payload, model.lobby)
+    return {
+      model: { ...model, lobby: r.model },
+      effects: r.effects
+    }
+  }
+
+  /* ---------- Calibration routing (GAME domain) ---------- */
+
+  if (domain === MessageDomain.CALIBRATION && model.calibration) {
+    const r = Calibration.update(payload, model.calibration, ctx)
+    return {
+      model: { ...model, calibration: r.model },
+      effects: r.effects
+    }
+  }
+
+  /* ---------- legacy root handling (unchanged) ---------- */
 
   switch (payload.type) {
     case MessageType.RELAY_HELLO:
@@ -93,84 +120,6 @@ export const update = (msg: TVMsg, model: TVModel, dispatch: Dispatch) => {
         model: { ...model, actions: payload.msg.actions || [] },
         effects: []
       }
-
-    case MessageType.CALIB_UPDATE: {
-      const { id, q, g } = payload.msg
-
-      const controller = model.controllers[id] ?? {
-        pointer: {
-          x: model.screenW / 2,
-          y: model.screenH / 2,
-          hoveredId: null
-        },
-        player: null,
-        spraying: false
-      }
-
-      const pointer = controller.pointer
-
-      const [x, y] = orientationToXY(q, g, model.screenW, model.screenH, {
-        invertX: true,
-        invertY: true,
-        dead: 0.03
-      })
-
-      const smooth = (a: number, b: number, f = 0.15) => a + (b - a) * f
-      const xs = smooth(pointer.x ?? x, x)
-      const ys = smooth(pointer.y ?? y, y)
-
-      let hoveredId: string | null = null
-      for (const a of model.actions) {
-        if (
-          xs >= a.rect.x &&
-          xs <= a.rect.x + a.rect.w &&
-          ys >= a.rect.y &&
-          ys <= a.rect.y + a.rect.h
-        ) {
-          hoveredId = a.id
-          break
-        }
-      }
-
-      const nextControllers = {
-        ...model.controllers,
-        [id]: {
-          ...controller,
-          pointer: { ...pointer, x: xs, y: ys, hoveredId }
-        }
-      }
-
-      let nextModel: TVModel = {
-        ...model,
-        controllers: nextControllers
-      }
-
-      let effects: RawEffect<TVEnv, TVMsg>[] = []
-
-      if (model.screen === 'driving' && model.driving) {
-        const r = Driving.update(payload, model.driving, makeCtx(nextModel))
-        nextModel = { ...nextModel, driving: r.model }
-        effects = effects.concat(r.effects)
-      }
-
-      if (model.screen === 'pacman' && model.pacman) {
-        const r = PacMan.update(payload, model.pacman, makeCtx(nextModel))
-        nextModel = { ...nextModel, pacman: r.model }
-        effects = effects.concat(r.effects)
-      }
-
-      if (model.screen === 'calibration' && model.calibration) {
-        const r = Calibration.update(
-          payload,
-          model.calibration,
-          makeCtx(nextModel)
-        )
-        nextModel = { ...nextModel, calibration: r.model }
-        effects = effects.concat(r.effects)
-      }
-
-      return { model: nextModel, effects }
-    }
 
     case MessageType.PLAYER_JOINED: {
       const players = [
@@ -209,21 +158,7 @@ export const update = (msg: TVMsg, model: TVModel, dispatch: Dispatch) => {
       return { model: { ...model, wordpond: r.model }, effects: r.effects }
     }
 
-    default: {
-      if (payload.msg?.screen) {
-        switch (payload.msg.screen) {
-          case 'lobby':
-            return Lobby.update(payload, model.lobby, ctx)
-          case 'menu':
-            return model.menu
-              ? Menu.update(payload, model.menu, ctx)
-              : { model, effects: [] }
-          default:
-            return { model, effects: [] }
-        }
-      }
-
+    default:
       return { model, effects: [] }
-    }
   }
 }

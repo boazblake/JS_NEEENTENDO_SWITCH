@@ -36,15 +36,15 @@ export const splitRoute = (
   type: string
 ): {
   domain: MessageDomain
-  rest: string
+  type: string
 } => {
   const idx = type.indexOf('.')
   if (idx === -1) {
-    return { domain: type as MessageDomain, rest: '' }
+    return { domain: type as MessageDomain, type: '' }
   }
 
   return {
     domain: type.slice(0, idx) as MessageDomain,
-    rest: type.slice(idx + 1)
+    type: type.slice(idx + 1)
   }
 }

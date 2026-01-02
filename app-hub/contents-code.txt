@@ -2,47 +2,6 @@
 
 ==============================
 
-PATH: apps/controller/main.ts
-
-import { renderApp } from 'algebraic-fx'
-import { renderer } from '@shared/renderer'
-import './main.css'
-import { program } from './program/index'
-import type { ControllerEnv } from './env'
-import { Motion } from 'capacitor-native-motion'
-
-// Ionic bootstrap (unchanged)
-;(async () => {
-  const ionicPath = '/ionic.esm.js'
-  await import(/* @vite-ignore */ ionicPath)
-})()
-
-import '@ionic/core/css/core.css'
-import '@ionic/core/css/normalize.css'
-import '@ionic/core/css/structure.css'
-// Generate controller identity
-const id = Math.random().toString(36).substring(2, 10)
-
-// Build environment (NO live sockets)
-const env: ControllerEnv = {
-  window,
-  id,
-  session: '',
-  document,
-  motion: Motion,
-  makeWebSocket: (url: string) => new WebSocket(url)
-}
-
-const root = document.querySelector('#root')
-if (!root) throw new Error('#root not found')
-
-// Start app — NOTHING ELSE
-renderApp(root, program, env, renderer)
-
-
-
-==============================
-
 PATH: apps/controller/program/index.ts
 
 import type { Program } from 'algebraic-fx'
@@ -65,107 +24,25 @@ export const program: Program<TVModel, TVMsg, TVEnv> = {
 
 ==============================
 
-PATH: apps/controller/program/env.ts
-
-import type { DomEnv } from 'algebraic-fx'
-
-export type ControllerEnv = DomEnv & {
-  id: string
-  session: string
-  makeWebSocket: (url: string) => WebSocket
-}
-
-
-
-==============================
-
-PATH: apps/controller/program/init.ts
-
-// controller/init.ts
-import { IO } from 'algebraic-fx'
-import type { ControllerModel } from './types'
-
-import { send } from './network'
-import { init as lobbyInit } from './lobby/init'
-import { init as menuInit } from './menu/init'
-import { init as calibrationInit } from './calibration/init'
-import { init as sprayInit } from './spray-can/init'
-import { init as wordPondInit } from './word-pond/init'
-import { init as drivingInit } from './driving/init'
-import { init as pacmanInit } from './pac-man/init'
-import * as Network from './network/'
-
-export const init = IO.IO<{ model: ControllerModel; effects: any[] }>(() => {
-  const name = 'Guest'
-
-  const lobby = lobbyInit.run().model
-  const menu = menuInit.run().model
-  const calibration = calibrationInit.run().model
-  const spray = sprayInit.run().model
-  const wordpond = wordPondInit.run().model
-  const driving = drivingInit.run().model
-  const pacman = pacmanInit.run().model
-  const network = Network.init()
-
-  const model: ControllerModel = {
-    name,
-    status: 'idle',
-    screen: 'lobby',
-    hoveredId: null,
-    lobby,
-    driving,
-    menu,
-    calibration,
-    spray,
-    pacman,
-    wordpond,
-    network
-  }
-
-  return {
-    model,
-    effects: [
-      IO.IO(() => ({
-        type: 'Enable',
-        url: 'wss://192.168.7.195:8081'
-      }))
-    ]
-  }
-})
-
-
-
-==============================
-
-PATH: apps/controller/program/subs.ts
-
-import * as Network from './network'
-import type { Subscription } from 'algebraic-fx'
-import type { ControllerEnv } from './env'
-import type { Model, Msg } from './types'
-
-export const subs = (model: Model): Subscription<ControllerEnv, Msg>[] => {
-  return Network.subs(model.network)
-}
-
-
-
-==============================
-
 PATH: apps/controller/program/update.ts
 
 import type { Payload } from '@shared/types'
+import type { Dispatch } from 'algebraic-fx'
 import type { NetworkMsg } from './network'
 import * as Network from './network'
 import { splitRoute } from '@shared/utils'
 import { MessageDomain } from '@shared/types'
 import { send } from './network'
+import { program as Calibration } from './calibration'
+import { program as Lobby } from './lobby'
+import { routeByDomain } from './router'
 
 export const update = (
   payload: Payload | NetworkMsg | { type: 'SELECT_TV'; session: string },
-  model: Model
+  model: Model,
+  dispatch: Dispatch
 ) => {
-  console.log(payload.type)
+  console.log(payload)
   // ---- NETWORK CONTROL (THIS WAS MISSING) ----
   if (
     payload.type === 'Enable' ||
@@ -179,41 +56,46 @@ export const update = (
     }
   }
 
-  // ---- USER INTENT ----
   if (payload.type === 'SELECT_TV') {
+    send({
+      type: 'NETWORK.REGISTER',
+      msg: {
+        role: 'CONTROLLER',
+        id: model.name,
+        session: payload.msg.session
+      },
+      t: Date.now()
+    })
+
     return {
       model: { ...model, session: payload.msg.session },
-      effects: [
-        send({
-          type: 'session.register.controller',
-          msg: {
-            role: 'CONTROLLER',
-            id: model.name,
-            session: payload.msg.session
-          },
-          t: Date.now()
-        })
-      ]
-    }
-  }
-
-  // ---- NETWORK PAYLOAD (FLAT) ----
-
-  console.log(payload)
-  const { domain, rest } = splitRoute(payload.type)
-
-  if (domain === MessageDomain.LOBBY && rest === 'TV_LIST') {
-    return {
-      model: {
-        ...model,
-        lobby: {
-          ...model.lobby,
-          availableTvs: payload.msg.list
-        }
-      },
       effects: []
     }
   }
+  // DOMAIN ROUTING (Phase 3)
+  return routeByDomain(payload, model, {
+    [MessageDomain.NETWORK]: (p, m) => {
+      if (p.type === 'ACK') {
+        dispatch({ type: `CALIBRATION.ENABLE_MOTION` })
+        model.screen = 'menu'
+      }
+
+      return { model, effects: [] }
+    },
+
+    [MessageDomain.LOBBY]: (p, m) => {
+      const r = Lobby.update(p, m.lobby, dispatch)
+      return { model: { ...m, lobby: r.model }, effects: r.effects }
+    },
+
+    [MessageDomain.CALIBRATION]: (p, m) => {
+      const r = Calibration.update(p, m.calibration, dispatch, model)
+      return {
+        model: { ...m, calibration: r.model },
+        effects: r.effects
+      }
+    }
+  })
 
   return { model, effects: [] }
 }
@@ -222,110 +104,116 @@ export const update = (
 
 ==============================
 
-PATH: apps/controller/program/types.ts
+PATH: apps/controller/program/subs.ts
 
-import type { Payload } from '@shared/types'
+import * as Network from './network'
+import { subs as calibrationSubs } from './calibration/subs'
+import type { Subscription } from 'algebraic-fx'
+import type { ControllerEnv } from './env'
+import type { Model, Msg } from './types'
 
-export type Msg = Payload | { type: 'SELECT_TV'; session: string }
-
-
-
-==============================
-
-PATH: apps/controller/program/network/index.ts
-
-// apps/controller/program/network/index.ts
-import { init } from './init'
-import { update } from './update'
-import { wsSub } from './subs'
-import type { NetworkModel } from './types'
-import { send } from './send'
-
-export { init, update, send }
-export const subs = (model: NetworkModel) => wsSub(model)
-export * from './types'
-
-
-
-==============================
-
-PATH: apps/controller/program/network/init.ts
-
-import type { NetworkModel } from './types'
-
-export const init = (): NetworkModel => ({
-  status: 'disconnected',
-  url: null
-})
-
-
-
-==============================
-
-PATH: apps/controller/program/network/subs.ts
-
-import { sub } from 'algebraic-fx'
-import type { ControllerEnv } from '../env'
-import type { NetworkModel } from './types'
-import type { Payload } from '@shared/types'
-import { registerSocket, clearSocket } from '@/effects/network'
-
-export const wsSub = (model: NetworkModel) => {
-  if (!model.url) return []
-
-  return [
-    sub<ControllerEnv, Payload>('controller:ws', (env, dispatch) => {
-      const ws = env.makeWebSocket(model.url)
-
-      registerSocket(ws)
-
-      ws.onopen = () => {}
-
-      ws.onmessage = (e) => {
-        dispatch(JSON.parse(String(e.data)) as Payload)
-      }
-
-      ws.onclose = () => clearSocket()
-
-      ws.onerror = () => {
-        clearActiveSocket()
-      }
-
-      return () => {
-        ws.close()
-        clearActiveSocket()
-      }
-    })
-  ]
+export const subs = (model: Model): Subscription<ControllerEnv, Msg>[] => {
+  return [...Network.subs(model.network), ...calibrationSubs(model.calibration)]
 }
 
 
 
 ==============================
 
-PATH: apps/controller/program/network/update.ts
+PATH: apps/controller/program/calibration/index.ts
 
-import type { NetworkModel, NetworkMsg } from './types'
+import type { Program } from 'algebraic-fx'
+import type { Model, Msg } from './types.js'
+import { init } from './init.js'
+import { update } from './update.js'
+import { view } from './view.js'
+import { subs } from './subs.js'
 
-export const update = (msg: NetworkMsg, model: NetworkModel) => {
+export const program: Program<Model, Msg> = {
+  init,
+  update,
+  view,
+  subs
+}
+
+
+
+==============================
+
+PATH: apps/controller/program/calibration/subs.ts
+
+import { sub } from 'algebraic-fx'
+import { Motion } from 'capacitor-native-motion'
+import type { Msg } from './types'
+import type { ControllerEnv } from '../env'
+
+export const subs = (model) => (model.enabled ? [motionSub()] : [])
+const motionSub = () =>
+  sub<ControllerEnv, Msg>('calibration:motion', (_env, dispatch) => {
+    let remove: (() => void) | undefined
+
+    Motion.start({ hz: 60 })
+      .then(() =>
+        Motion.addListener(
+          'motion',
+          ({ quaternion, gravity, rotationRate, timestamp }) => {
+            dispatch({
+              type: 'CALIBRATION.MOTION_EVENT',
+              msg: { quaternion, gravity, rotation: rotationRate },
+              t: timestamp
+            })
+          }
+        )
+      )
+      .then((listener) => {
+        remove = listener.remove
+      })
+      .catch((e) => console.error('[motionSub] failed', e))
+
+    return () => {
+      remove?.()
+      Motion.stop()
+    }
+  })
+
+
+
+==============================
+
+PATH: apps/controller/program/calibration/update.ts
+
+import type { Dispatch, RawEffect } from 'algebraic-fx'
+import { send } from '../network/'
+import type { Model, Msg } from './types'
+
+export const update = (
+  msg: Msg,
+  model: Model,
+  dispatch: Dispatch,
+  ctx: Model
+) => {
   switch (msg.type) {
-    case 'Enable':
-      return { model: { status: 'connecting', url: msg.url }, effects: [] }
+    case 'ENABLE_MOTION':
+      let m = model
+      m.enabled = true
+      return { model: m, effects: [] }
 
-    case 'Disable':
-      return { model: { status: 'disconnected', url: null }, effects: [] }
+    case 'MOTION_EVENT': {
+      console.log('motion', msg)
+      const { quaternion, gravity, rotation, timestamp } = msg
+      const next: Model = { ...model, quaternion, gravity, rotation }
+      // const emit: RawEffect<any, any> = {
+      // run: () => {
+      send({
+        type: 'CALIBRATION.MOTION_UPDATE',
+        msg: { ...msg, session: ctx.session },
+        t: Date.now()
+      })
+      // }
+      // }
 
-    case 'Connected':
-      return { model: { ...model, status: 'connected' }, effects: [] }
-
-    case 'Disconnected':
-      return { model: { ...model, status: 'disconnected' }, effects: [] }
-
-    case 'Inbound':
-      return { model, effects: [] }
-
-    case 'Send':
-      return { model, effects: [] }
+      return { model: next, effects: [] }
+    }
 
     default:
       return { model, effects: [] }
@@ -336,164 +224,21 @@ export const update = (msg: NetworkMsg, model: NetworkModel) => {
 
 ==============================
 
-PATH: apps/controller/program/network/send.ts
+PATH: apps/controller/program/calibration/init.ts
 
 import { IO } from 'algebraic-fx'
-import type { Payload } from '@shared/types'
-import type { ControllerEnv } from '../env'
+import type { Model } from './types.js'
 
-export const send = ({ type, msg, t }: Payload) =>
-  IO.IO<ControllerEnv>(() => ({
-    _tag: 'NetworkEffect',
-    type,
-    msg,
-    t
-  }))
-
-
-
-==============================
-
-PATH: apps/tv/main.ts
-
-import { renderApp } from 'algebraic-fx'
-import { renderer } from '@shared/renderer'
-import { program } from './program'
-import type { TVEnv } from './program/env'
-
-const session = Math.random().toString(36).substring(2, 7).toUpperCase()
-const env: TVEnv = {
-  window,
-  document,
-  session,
-  makeWebSocket: (url: string) => new WebSocket(url)
-}
-
-const root = document.querySelector('#root')
-if (!root) throw new Error('#root not found')
-
-renderApp(root as HTMLElement, program, env, renderer)
-
-// // tv/main.ts
-// import { renderApp } from 'algebraic-fx'
-// import { renderer } from '@shared/renderer'
-// import { program } from './program'
-// import type { TVEnv } from './program/env'
-//
-// const env: TVEnv = {
-//   window,
-//   document,
-//   ws: new WebSocket('wss://10.0.0.242:8081/')
-// }
-//
-// const root = document.querySelector('#root')
-// if (!root) throw new Error('#root not found')
-//
-// renderApp(root as HTMLElement, program, env, renderer)
-
-
-
-==============================
-
-PATH: apps/tv/program/index.ts
-
-import type { Program } from 'algebraic-fx'
-import type { TVEnv } from './env'
-import type { TVModel, TVMsg } from './types'
-
-import { init } from './init'
-import { update } from './update'
-import { subs } from './subs'
-import { view } from './view'
-
-export const program: Program<TVModel, TVMsg, TVEnv> = {
-  init,
-  update,
-  subs,
-  view
-}
-
-
-
-==============================
-
-PATH: apps/tv/program/env.ts
-
-import type { DomEnv, Dispatch } from 'algebraic-fx'
-
-// Extend DomEnv with WebSocket
-export type TVEnv = DomEnv & {
-  makeWebSocket: (url: string) => new WebSocket(url),
-}
-
-
-
-==============================
-
-PATH: apps/tv/program/init.ts
-
-import { IO } from 'algebraic-fx'
-import { Screen, MessageType } from '@shared/types'
-import { send } from '@shared/network/send'
-import type { TVModel, TVMsg } from './types'
-import * as Network from './network'
-
-// import { init as lobbyInit } from './lobby/init'
-
-export const init = IO.IO(() => {
-  const session = Math.random().toString(36).substring(2, 7).toUpperCase()
-
-  const model: TVModel = {
-    session,
-    screen: Screen.MENU,
-
-    controllers: {},
-    screenW: window.innerWidth,
-    screenH: window.innerHeight,
-
-    actions: [],
-    players: [],
-
-    // lobby: lobbyInit(),
-    menu: null,
-    calibration: null,
-    spray: null,
-    wordpond: null,
-    driving: null,
-    pacman: null,
-
-    network: Network.init()
-  }
-  console.log(MessageType)
-
-  const effects = [
-    IO.IO(() => ({
-      type: 'Network',
-      msg: { type: 'Enable', url: 'wss://192.168.7.195:8081' }
-    }))
-  ]
-
-  return { model, effects }
-})
-
-
-
-==============================
-
-PATH: apps/tv/program/subs.ts
-
-import type { TVModel } from './model'
-import * as Network from './network'
-import type { Subscription } from 'algebraic-fx'
-import { mapSub } from 'algebraic-fx'
-import type { TVEnv } from './env'
-import type { TVMsg } from './msg'
-
-export const subs = (model: TVModel): Subscription<TVEnv, TVMsg>[] => {
-  return Network.subs(model.network).map((s) =>
-    mapSub(s, (msg) => ({ type: 'Network', msg }) as TVMsg)
-  )
-}
+export const init = IO.IO(() => ({
+  model: {
+    enabled: false,
+    quaternion: [0, 0, 0, 0],
+    gravity: [0, 0, 0],
+    rotation: [0, 0, 0],
+    timestamp: 0
+  } as Model,
+  effects: []
+}))
 
 
 
@@ -507,7 +252,8 @@ import type { WireMsg } from '@shared/protocol'
 import type { TVEnv } from './env'
 import type { TVModel, TVContext, TVMsg } from './types'
 import * as Network from './network'
-
+import { splitRoute } from '@shared/utils'
+import { MessageDomain } from '@shared/types'
 import { orientationToXY } from './effects'
 
 import { program as Lobby } from './lobby'
@@ -548,6 +294,7 @@ const makeCtx = (model: TVModel): TVContext => ({
 /* -------------------------------------------------- */
 
 export const update = (msg: TVMsg, model: TVModel, dispatch: Dispatch) => {
+  console.log(msg, model)
   /* ---------- network wrapper ---------- */
 
   if (msg.type === 'Network') {
@@ -574,10 +321,34 @@ export const update = (msg: TVMsg, model: TVModel, dispatch: Dispatch) => {
     }
   }
 
-  /* ---------- legacy payload ---------- */
+  /* ---------- payload ---------- */
 
   const payload = msg as Payload
   const ctx = makeCtx(model)
+
+  const { domain } = splitRoute(payload.type)
+
+  /* ---------- TV lobby routing ---------- */
+
+  if (domain === MessageDomain.LOBBY) {
+    const r = Lobby.update(payload, model.lobby)
+    return {
+      model: { ...model, lobby: r.model },
+      effects: r.effects
+    }
+  }
+
+  /* ---------- Calibration routing (GAME domain) ---------- */
+
+  if (domain === MessageDomain.GAME && model.calibration) {
+    const r = Calibration.update(payload, model.calibration, ctx)
+    return {
+      model: { ...model, calibration: r.model },
+      effects: r.effects
+    }
+  }
+
+  /* ---------- legacy root handling (unchanged) ---------- */
 
   switch (payload.type) {
     case MessageType.RELAY_HELLO:
@@ -596,84 +367,6 @@ export const update = (msg: TVMsg, model: TVModel, dispatch: Dispatch) => {
         model: { ...model, actions: payload.msg.actions || [] },
         effects: []
       }
-
-    case MessageType.CALIB_UPDATE: {
-      const { id, q, g } = payload.msg
-
-      const controller = model.controllers[id] ?? {
-        pointer: {
-          x: model.screenW / 2,
-          y: model.screenH / 2,
-          hoveredId: null
-        },
-        player: null,
-        spraying: false
-      }
-
-      const pointer = controller.pointer
-
-      const [x, y] = orientationToXY(q, g, model.screenW, model.screenH, {
-        invertX: true,
-        invertY: true,
-        dead: 0.03
-      })
-
-      const smooth = (a: number, b: number, f = 0.15) => a + (b - a) * f
-      const xs = smooth(pointer.x ?? x, x)
-      const ys = smooth(pointer.y ?? y, y)
-
-      let hoveredId: string | null = null
-      for (const a of model.actions) {
-        if (
-          xs >= a.rect.x &&
-          xs <= a.rect.x + a.rect.w &&
-          ys >= a.rect.y &&
-          ys <= a.rect.y + a.rect.h
-        ) {
-          hoveredId = a.id
-          break
-        }
-      }
-
-      const nextControllers = {
-        ...model.controllers,
-        [id]: {
-          ...controller,
-          pointer: { ...pointer, x: xs, y: ys, hoveredId }
-        }
-      }
-
-      let nextModel: TVModel = {
-        ...model,
-        controllers: nextControllers
-      }
-
-      let effects: RawEffect<TVEnv, TVMsg>[] = []
-
-      if (model.screen === 'driving' && model.driving) {
-        const r = Driving.update(payload, model.driving, makeCtx(nextModel))
-        nextModel = { ...nextModel, driving: r.model }
-        effects = effects.concat(r.effects)
-      }
-
-      if (model.screen === 'pacman' && model.pacman) {
-        const r = PacMan.update(payload, model.pacman, makeCtx(nextModel))
-        nextModel = { ...nextModel, pacman: r.model }
-        effects = effects.concat(r.effects)
-      }
-
-      if (model.screen === 'calibration' && model.calibration) {
-        const r = Calibration.update(
-          payload,
-          model.calibration,
-          makeCtx(nextModel)
-        )
-        nextModel = { ...nextModel, calibration: r.model }
-        effects = effects.concat(r.effects)
-      }
-
-      return { model: nextModel, effects }
-    }
 
     case MessageType.PLAYER_JOINED: {
       const players = [
@@ -712,967 +405,8 @@ export const update = (msg: TVMsg, model: TVModel, dispatch: Dispatch) => {
       return { model: { ...model, wordpond: r.model }, effects: r.effects }
     }
 
-    default: {
-      if (payload.msg?.screen) {
-        switch (payload.msg.screen) {
-          case 'lobby':
-            return Lobby.update(payload, model.lobby, ctx)
-          case 'menu':
-            return model.menu
-              ? Menu.update(payload, model.menu, ctx)
-              : { model, effects: [] }
-          default:
-            return { model, effects: [] }
-        }
-      }
-
-      return { model, effects: [] }
-    }
-  }
-}
-
-
-
-==============================
-
-PATH: apps/tv/program/types.ts
-
-import type { Payload, Screen as SharedScreen } from '@shared/types'
-import type { NetworkModel, NetworkMsg } from './network'
-
-export type TVScreen = SharedScreen
-
-export type PointerState = {
-  x: number
-  y: number
-  hoveredId: string | null
-}
-
-export type ControllerState = {
-  pointer: PointerState
-  player: { id: string; name: string; slot: number } | null
-  spraying: boolean
-}
-
-export type ActionRect = {
-  id: string
-  rect: { x: number; y: number; w: number; h: number }
-}
-
-export type PlayerState = {
-  id: string
-  name: string
-  slot: number
-}
-
-// import type { Model as LobbyModel } from './lobby/types'
-import type { Model as MenuModel } from './menu/types'
-import type { Model as CalibrationModel } from './calibration/types'
-import type { Model as SprayModel } from './spray-can/types'
-import type { Model as WordPondModel } from './word-pond/types'
-import type { Model as DrivingModel } from './driving/types'
-import type { Model as PacManModel } from './pac-man/types'
-
-export type TVModel = {
-  session: string
-  screen: TVScreen
-
-  controllers: Record<string, ControllerState>
-  screenW: number
-  screenH: number
-
-  actions: ActionRect[]
-  players: PlayerState[]
-
-  // lobby: LobbyModel
-  menu: MenuModel | null
-  calibration: CalibrationModel | null
-  spray: SprayModel | null
-  wordpond: WordPondModel | null
-  driving: DrivingModel | null
-  pacman: PacManModel | null
-
-  network: NetworkModel
-}
-
-export type TVContext = {
-  session: string
-  screenW: number
-  screenH: number
-  controllers: Record<string, ControllerState>
-  actions: ActionRect[]
-  players: PlayerState[]
-}
-
-export type TVMsg =
-  | Payload
-  | { type: 'Network'; msg: NetworkMsg }
-  | { type: 'Shutdown'; msg: {} }
-
-
-
-==============================
-
-PATH: apps/tv/program/network/index.ts
-
-import { init } from './init'
-import { update } from './update'
-import { wsSub } from './subs'
-import type { NetworkModel } from './types'
-
-export { init, update }
-
-export const subs = (model: NetworkModel) => wsSub(model)
-export * from './types'
-
-
-
-==============================
-
-PATH: apps/tv/program/network/init.ts
-
-import type { NetworkModel } from './types'
-
-export const init = (): NetworkModel => ({
-  status: 'disconnected',
-  url: null
-})
-
-
-
-==============================
-
-PATH: apps/tv/program/network/subs.ts
-
-import { sub } from 'algebraic-fx'
-import type { TVEnv } from '../env'
-import type { NetworkModel } from './types'
-import type { Payload } from '@shared/types'
-import { registerSocket, clearSocket } from '@/effects/network'
-
-export const wsSub = (model: NetworkModel) => {
-  if (!model.url) return []
-
-  return [
-    sub<TVEnv, Payload>('tv:ws', (env, dispatch) => {
-      const ws = env.makeWebSocket(model.url)
-
-      registerSocket(ws)
-
-      ws.onopen = () => {}
-
-      ws.onmessage = (e) => {
-        dispatch(JSON.parse(String(e.data)) as Payload)
-      }
-
-      ws.onclose = () => clearSocket()
-
-      ws.onerror = () => {
-        clearActiveSocket()
-      }
-
-      return () => {
-        ws.close()
-        clearActiveSocket()
-      }
-    })
-  ]
-}
-
-
-
-==============================
-
-PATH: apps/tv/program/network/update.ts
-
-import type { NetworkModel, NetworkMsg } from './types'
-
-export const update = (msg: NetworkMsg, model: NetworkModel) => {
-  switch (msg.type) {
-    case 'Enable':
-      return {
-        model: { status: 'connecting', url: msg.url },
-        effects: []
-      }
-
-    case 'Connected':
-      return {
-        model: { ...model, status: 'connected' },
-        effects: []
-      }
-
-    case 'Disconnected':
-      return {
-        model: { status: 'disconnected', url: model.url },
-        effects: []
-      }
-
-    case 'Send':
-      // outbound is handled by the subscription
-      return { model, effects: [] }
-
-    case 'Inbound':
-      return { model, effects: [] }
-
     default:
       return { model, effects: [] }
   }
 }
-
-
-
-==============================
-
-PATH: apps/tv/program/network/send.ts
-
-import { IO } from 'algebraic-fx'
-import { encode } from '@shared/protocol'
-import type { NetworkMsg } from './types'
-import type { TVEnv } from '../env'
-
-export const send = (wire: NetworkMsg & { type: 'Send' }) =>
-  IO.IO<TVEnv>(() => {
-    return {
-      _tag: 'NetworkEffect',
-      wire
-    }
-  })
-
-
-
-==============================
-
-PATH: shared/src/network/index.ts
-
-export * from './types'
-export * from './messages'
-export * from './init'
-export * from './update'
-export * from './subs'
-
-
-
-==============================
-
-PATH: shared/src/network/messages.ts
-
-import type { Payload } from '../types'
-import { MessageDomain } from '../types'
-
-export type Role = 'TV' | 'CONTROLLER'
-
-export type RegisterMsg = {
-  role: Role
-  id: string
-  session?: string
-  name?: string
-}
-
-export type AckRegisterMsg = {
-  role: Role
-  session: string
-}
-
-export type RejectMsg = {
-  reason:
-    | 'INVALID_JSON'
-    | 'MISSING_ROLE'
-    | 'MISSING_ID'
-    | 'MISSING_SESSION'
-    | 'NO_SESSION'
-    | 'UNKNOWN'
-  session?: string
-}
-
-export type TvListMsg = {
-  list: string[]
-}
-
-export const NetworkType = {
-  REGISTER: `${MessageDomain.NETWORK}.REGISTER`,
-  ACK: `${MessageDomain.NETWORK}.ACK`,
-  REJECT: `${MessageDomain.NETWORK}.REJECT`,
-  PING: `${MessageDomain.NETWORK}.PING`,
-  PONG: `${MessageDomain.NETWORK}.PONG`
-} as const
-
-export const LobbyType = {
-  TV_LIST: `${MessageDomain.LOBBY}.TV_LIST`
-} as const
-
-export type NetworkRegister = Payload<
-  (typeof NetworkType)['REGISTER'],
-  RegisterMsg
->
-export type NetworkAck = Payload<(typeof NetworkType)['ACK'], AckRegisterMsg>
-export type NetworkReject = Payload<(typeof NetworkType)['REJECT'], RejectMsg>
-export type LobbyTvList = Payload<(typeof LobbyType)['TV_LIST'], TvListMsg>
-
-export type AnyWirePayload = Payload<string, Record<string, unknown>>
-
-
-
-==============================
-
-PATH: shared/src/network/types.ts
-
-import type { WireMsg } from '@shared/protocol'
-
-export type NetworkModel = {
-  status: 'disconnected' | 'connecting' | 'connected'
-  url: string | null
-}
-
-export type NetworkMsg =
-  | { type: 'Enable'; url: string }
-  | { type: 'Disable' }
-  | { type: 'Connected' }
-  | { type: 'Disconnected' }
-  | { type: 'Inbound'; msg: WireMsg }
-  | { type: 'Send'; msg: WireMsg }
-
-
-
-==============================
-
-PATH: shared/src/types.ts
-
-/** --------------------------------------------------------------------------
- *  Core payload (single wire shape)
- *  -------------------------------------------------------------------------- */
-
-export type Payload<
-  TType extends string = string,
-  TMsg extends Record<string, unknown> = Record<string, unknown>
-> = {
-  type: TType
-  msg: TMsg
-  t: number
-}
-
-/** --------------------------------------------------------------------------
- *  Roles
- *  -------------------------------------------------------------------------- */
-
-export enum Role {
-  TV = 'TV',
-  CONTROLLER = 'CONTROLLER'
-}
-
-/** --------------------------------------------------------------------------
- *  Screens / routes
- *  -------------------------------------------------------------------------- */
-
-export enum Screen {
-  LOBBY = 'LOBBY',
-  MENU = 'MENU',
-  CALIBRATION = 'CALIBRATION',
-  SPRAYCAN = 'SPRAYCAN',
-  WORDPOND = 'WORDPOND',
-  PACMAN = 'PACMAN',
-  DRIVING = 'DRIVING'
-}
-
-/** --------------------------------------------------------------------------
- *  Network message types (UPPER_SNAKE)
- *  -------------------------------------------------------------------------- */
-
-export enum MessageType {
-  // Relay lifecycle
-  RELAY_HELLO = 'RELAY_HELLO',
-  RELAY_ERROR = 'RELAY_ERROR',
-
-  // Discovery
-  TV_LIST = 'TV_LIST',
-
-  // Registration / session
-  REGISTER = 'REGISTER',
-  REGISTERED = 'REGISTERED',
-  REJECTED = 'REJECTED',
-
-  // Session events
-  PLAYER_JOINED = 'PLAYER_JOINED',
-  PLAYER_LEFT = 'PLAYER_LEFT',
-
-  // Navigation
-  NAVIGATE = 'NAVIGATE',
-
-  // Utility
-  PING = 'PING',
-  PONG = 'PONG',
-
-  // Motion / calibration
-  CALIB_UPDATE = 'CALIB_UPDATE',
-
-  // Spray
-  SPRAY_START = 'SPRAY_START',
-  SPRAY_POINT = 'SPRAY_POINT',
-  SPRAY_END = 'SPRAY_END'
-}
-
-/** --------------------------------------------------------------------------
- *  Canonical network payloads (typed)
- *  -------------------------------------------------------------------------- */
-
-export type RelayHello = Payload<
-  MessageType.RELAY_HELLO,
-  {
-    message: string
-  }
->
-
-export type RelayError = Payload<
-  MessageType.RELAY_ERROR,
-  {
-    reason: string
-  }
->
-
-export type TVList = Payload<
-  MessageType.TV_LIST,
-  {
-    list: string[]
-  }
->
-
-export type Register = Payload<
-  MessageType.REGISTER,
-  {
-    role: Role
-    id: string
-    session?: string
-    name?: string
-  }
->
-
-export type Registered = Payload<
-  MessageType.REGISTERED,
-  {
-    role: Role
-    id: string
-    session: string
-  }
->
-
-export type Rejected = Payload<
-  MessageType.REJECTED,
-  {
-    role: Role
-    id?: string
-    reason: string
-    session?: string
-  }
->
-
-export type PlayerJoined = Payload<
-  MessageType.PLAYER_JOINED,
-  {
-    session: string
-    id: string
-    name: string
-  }
->
-
-export type PlayerLeft = Payload<
-  MessageType.PLAYER_LEFT,
-  {
-    session: string
-    id?: string
-    reason?: string
-  }
->
-
-export type Navigate = Payload<
-  MessageType.NAVIGATE,
-  {
-    session: string
-    screen: Screen
-  }
->
-
-export type Ping = Payload<MessageType.PING, {}>
-export type Pong = Payload<MessageType.PONG, {}>
-
-/** --------------------------------------------------------------------------
- *  WordPond namespace (keep, but UPPER_SNAKE keys)
- *  -------------------------------------------------------------------------- */
-
-export enum WordPondType {
-  WORDPOND_NET_UPDATE = 'WORDPOND_NET_UPDATE',
-  WORDPOND_SHAKE = 'WORDPOND_SHAKE',
-  WORDPOND_STATE = 'WORDPOND_STATE'
-}
-
-export type Letter = {
-  id: string
-  char: string
-  x: number
-  y: number
-  vx: number
-  vy: number
-  caughtBy: string | null
-}
-
-export type Pond = {
-  id: string
-  letters: string[]
-}
-
-export type Net = {
-  id: string
-  x: number
-  y: number
-}
-
-export type WordPondState = {
-  players: string[]
-  letters: Letter[]
-  nets: Record<string, Net>
-  ponds: Record<string, Pond>
-  targetWord: string
-}
-
-export type WordPondNetUpdate = Payload<
-  WordPondType.WORDPOND_NET_UPDATE,
-  {
-    screen: Screen.WORDPOND
-    session: string
-    id: string
-    x: number
-    y: number
-  }
->
-
-export type WordPondShake = Payload<
-  WordPondType.WORDPOND_SHAKE,
-  {
-    screen: Screen.WORDPOND
-    session: string
-    id: string
-  }
->
-
-export type WordPondStatePayload = Payload<
-  WordPondType.WORDPOND_STATE,
-  {
-    screen: Screen.WORDPOND
-    session: string
-    state: WordPondState
-  }
->
-
-export type NetworkMessage =
-  | RelayHello
-  | RelayError
-  | TVList
-  | Register
-  | Registered
-  | Rejected
-  | PlayerJoined
-  | PlayerLeft
-  | Navigate
-  | Ping
-  | Pong
-  | WordPondNetUpdate
-  | WordPondShake
-  | WordPondStatePayload
-
-export type AnyPayload = Payload<string, Record<string, unknown>>
-
-/** --------------------------------------------------------------------------
- *  Global color palette shared by apps (UI only)
- *  -------------------------------------------------------------------------- */
-
-export const COLORS: { color: string; hex: string }[] = [
-  { color: 'red', hex: '#ef4444' },
-  { color: 'orange', hex: '#f97316' },
-  { color: 'yellow', hex: '#eab308' },
-  { color: 'green', hex: '#22c55e' },
-  { color: 'teal', hex: '#14b8a6' },
-  { color: 'blue', hex: '#3b82f6' },
-  { color: 'purple', hex: '#8b5cf6' },
-  { color: 'pink', hex: '#ec4899' }
-]
-
-/** --------------------------------------------------------------------------
- *  WordPond compatibility aliases (TEMPORARY)
- *  -------------------------------------------------------------------------- */
-
-export const WordPondMsg = {
-  NET_UPDATE: WordPondType.WORDPOND_NET_UPDATE,
-  SHAKE: WordPondType.WORDPOND_SHAKE,
-  STATE: WordPondType.WORDPOND_STATE
-} as const
-
-export type WordPondMsgType =
-  | (typeof WordPondMsg)['NET_UPDATE']
-  | (typeof WordPondMsg)['SHAKE']
-  | (typeof WordPondMsg)['STATE']
-
-/** --------------------------------------------------------------------------
- *  Message routing domains
- *  -------------------------------------------------------------------------- */
-
-export enum MessageDomain {
-  NETWORK = 'NETWORK',
-  LOBBY = 'LOBBY',
-  GAME = 'GAME'
-}
-
-/**
- * A routed message type is a dot-delimited path.
- * The first segment MUST be a MessageDomain.
- *
- * Examples:
- *  - NETWORK.REGISTER
- *  - LOBBY.SET_TV_LIST
- *  - GAME.WORDPOND.NET_UPDATE
- */
-export type RoutedType = `${MessageDomain}.${string}`
-
-/** --------------------------------------------------------------------------
- *  Canonical payload (unchanged shape)
- *  -------------------------------------------------------------------------- */
-
-export type Payload<
-  TType extends string = RoutedType,
-  TMsg extends Record<string, unknown> = Record<string, unknown>
-> = {
-  type: TType
-  msg: TMsg
-  t: number
-}
-
-
-
-==============================
-
-PATH: shared/src/utils.ts
-
-import type { Payload } from './types'
-import { MessageDomain, MessageType, Screen } from './types'
-
-export const createMsg = <TMsg extends Record<string, unknown>>(
-  type: MessageType | string,
-  msg: TMsg,
-  t = Date.now()
-): Payload<string, TMsg> => ({ type, msg, t })
-
-export const withIds = <TMsg extends Record<string, unknown>>(
-  p: Payload<string, TMsg>,
-  id?: string,
-  session?: string
-): Payload<string, TMsg & { id?: string; session?: string }> => ({
-  ...p,
-  msg: { ...(p.msg as any), id, session }
-})
-
-/* ------------------------------------------------------------------
- * Compatibility shims (TEMPORARY)
- * ------------------------------------------------------------------ */
-
-export const wrapScreenIn = (screen: Screen, payload: any): Payload => ({
-  type: MessageType.NAVIGATE,
-  msg: { screen, ...payload },
-  t: Date.now()
-})
-
-export const wrapScreenOut = (screen: Screen, payload: any): Payload => ({
-  type: MessageType.NAVIGATE,
-  msg: { screen, ...payload },
-  t: Date.now()
-})
-
-export const splitRoute = (
-  type: string
-): {
-  domain: MessageDomain
-  rest: string
-} => {
-  const idx = type.indexOf('.')
-  if (idx === -1) {
-    return { domain: type as MessageDomain, rest: '' }
-  }
-
-  return {
-    domain: type.slice(0, idx) as MessageDomain,
-    rest: type.slice(idx + 1)
-  }
-}
-
-
-
-==============================
-
-PATH: apps/server/src/main.ts
-
-import { WebSocketServer, WebSocket } from 'ws'
-import https from 'https'
-import path from 'path'
-import { readFileSync } from 'fs'
-
-import type { Payload } from '../../../shared/src/types'
-import { splitRoute } from '../../../shared/src/utils'
-import {
-  NetworkType,
-  LobbyType,
-  type AnyWirePayload,
-  type RegisterMsg,
-  type Role
-} from '../../../shared/src/network/messages'
-
-// ---------------------------------------------------------------------------
-//  Session tracking
-// ---------------------------------------------------------------------------
-
-type Session = {
-  tv: WebSocket
-  controllers: Set<WebSocket>
-}
-
-const sessions = new Map<string, Session>()
-const pending = new Set<WebSocket>()
-
-// ---------------------------------------------------------------------------
-//  HTTPS + WSS
-// ---------------------------------------------------------------------------
-
-const certDir = path.resolve(process.cwd(), '../../certs')
-const key = readFileSync(path.join(certDir, '/multi-ip-key.pem'))
-const cert = readFileSync(path.join(certDir, '/multi-ip.pem'))
-
-const server = https.createServer({ key, cert })
-const wss = new WebSocketServer({ server })
-
-server.listen(8081, '0.0.0.0', () =>
-  console.info('[relay] HTTPS+WSS listening on wss://0.0.0.0:8081')
-)
-
-// ---------------------------------------------------------------------------
-//  Helpers
-// ---------------------------------------------------------------------------
-
-const isOpen = (ws: WebSocket) => ws.readyState === WebSocket.OPEN
-
-const safeSend = (ws: WebSocket | undefined, payload: Payload) => {
-  if (!ws || !isOpen(ws)) return
-  ws.send(JSON.stringify(payload))
-}
-
-const now = () => Date.now()
-
-const reject = (ws: WebSocket, reason: any, session?: string) => {
-  safeSend(ws, {
-    type: NetworkType.REJECT,
-    msg: { reason, session },
-    t: now()
-  })
-}
-
-const sendTvListTo = (ws: WebSocket) => {
-  safeSend(ws, {
-    type: LobbyType.TV_LIST,
-    msg: { list: Array.from(sessions.keys()) },
-    t: now()
-  })
-}
-
-const broadcastTvList = () => {
-  for (const ws of pending) sendTvListTo(ws)
-  for (const s of sessions.values())
-    for (const c of s.controllers) sendTvListTo(c)
-}
-
-const closeAllControllers = (s: Session, code: number, reason: string) => {
-  for (const c of s.controllers) {
-    try {
-      c.close(code, reason)
-    } catch {
-      // ignore
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-//  Registration
-// ---------------------------------------------------------------------------
-
-const handleRegister = (socket: WebSocket, msg: RegisterMsg) => {
-  console.log('wtf')
-  const role: Role | undefined = msg.role
-  const id: string | undefined = msg.id
-  const session: string | undefined = msg.session
-
-  if (!role) return reject(socket, 'MISSING_ROLE')
-  if (!id) return reject(socket, 'MISSING_ID')
-
-  if (role === 'TV') {
-    if (!session) return reject(socket, 'MISSING_SESSION')
-
-    const old = sessions.get(session)
-    if (old?.tv && old.tv !== socket) {
-      try {
-        old.tv.close(1012, 'TV replaced')
-      } catch {
-        // ignore
-      }
-      closeAllControllers(old, 1012, 'TV replaced')
-    }
-    sessions.set(session, { tv: socket, controllers: new Set() })
-    pending.delete(socket)
-
-    safeSend(socket, {
-      type: NetworkType.ACK,
-      msg: { role: 'TV', session },
-      t: now()
-    })
-
-    console.info(`[relay] TV registered session=${session} id=${id}`)
-    broadcastTvList()
-    return
-  }
-
-  if (role === 'CONTROLLER') {
-    if (!session) return reject(socket, 'MISSING_SESSION')
-
-    const s = sessions.get(session)
-    if (!s) return reject(socket, 'NO_SESSION', session)
-
-    s.controllers.add(socket)
-    pending.delete(socket)
-
-    safeSend(socket, {
-      type: NetworkType.ACK,
-      msg: { role: 'CONTROLLER', session },
-      t: now()
-    })
-
-    // Notify TV a controller joined (keep this as a plain forwardable payload)
-    safeSend(s.tv, {
-      type: 'SESSION.PLAYER_JOINED',
-      msg: { session, id, name: msg.name ?? 'Player' },
-      t: now()
-    })
-
-    console.info(`[relay] Controller joined session=${session} id=${id}`)
-  }
-}
-
-// ---------------------------------------------------------------------------
-//  WS Handling
-// ---------------------------------------------------------------------------
-
-wss.on('connection', (socket) => {
-  pending.add(socket)
-  // Always provide discovery immediately
-  sendTvListTo(socket)
-
-  socket.on('message', (raw) => {
-    let payload: AnyWirePayload
-    try {
-      payload = JSON.parse(raw.toString())
-    } catch {
-      reject(socket, 'INVALID_JSON')
-      return
-    }
-
-    console.log(payload)
-    if (
-      !payload ||
-      typeof payload.type !== 'string' ||
-      typeof payload.msg !== 'object' ||
-      payload.msg === null
-    ) {
-      reject(socket, 'UNKNOWN')
-      return
-    }
-    // Back-compat: support your current string enums during transition
-    // session.register.tv -> treat as NETWORK.REGISTER role=TV
-    // session.register.player -> treat as NETWORK.REGISTER role=CONTROLLER
-    if (payload.type === 'session.register.tv') {
-      const m: any = payload.msg
-      return handleRegister(socket, {
-        role: 'TV',
-        id: m.session ?? 'TV',
-        session: m.session
-      })
-    }
-
-    if (payload.type === 'session.register.player') {
-      const m: any = payload.msg
-      return handleRegister(socket, {
-        role: 'CONTROLLER',
-        id: m.id ?? 'CONTROLLER',
-        session: m.session,
-        name: m.name
-      })
-    }
-
-    const { domain, rest } = splitRoute(payload.type)
-
-    // Core network control
-    if (domain === 'NETWORK') {
-      if (rest === 'REGISTER') {
-        return handleRegister(socket, payload.msg as any)
-      }
-
-      if (rest === 'PING') {
-        safeSend(socket, { type: NetworkType.PONG, msg: {}, t: now() })
-        return
-      }
-
-      if (rest === 'PONG') return
-    }
-
-    // Session routing for everything else: requires msg.session
-    const session = (payload.msg as any).session as string | undefined
-    if (!session) return
-
-    const s = sessions.get(session)
-    if (!s) return
-
-    // TV -> controllers
-    if (socket === s.tv) {
-      for (const c of s.controllers) safeSend(c, payload as any)
-      return
-    }
-
-    // Controller -> TV
-    safeSend(s.tv, payload as any)
-  })
-
-  socket.on('close', () => {
-    pending.delete(socket)
-
-    for (const [session, s] of sessions) {
-      if (s.tv === socket) {
-        sessions.delete(session)
-        console.info(`[relay] TV closed session=${session}`)
-
-        for (const c of s.controllers) {
-          safeSend(c, {
-            type: 'SESSION.PLAYER_LEFT',
-            msg: { session, reason: 'TV_DISCONNECTED' },
-            t: now()
-          })
-        }
-
-        broadcastTvList()
-        return
-      }
-
-      if (s.controllers.delete(socket)) {
-        console.info(`[relay] Controller left session=${session}`)
-        safeSend(s.tv, {
-          type: 'SESSION.PLAYER_LEFT',
-          msg: { session },
-          t: now()
-        })
-        return
-      }
-    }
-  })
-})
-
-wss.on('error', (err) => console.error('[relay] error', err))
 

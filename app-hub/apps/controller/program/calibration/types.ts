@@ -1,16 +1,25 @@
+import type { Payload } from '@shared/types'
+import { MessageDomain } from '@shared/types'
+
+export const SensorType = {
+  MOTION: `${MessageDomain.SENSOR}.MOTION`
+} as const
+
 export type Model = {
-  quaternion: [number, number, number, number]
-  gravity: [number, number, number]
-  rotation: [number, number, number]
+  enabled: boolean
+  quaternion: number[]
+  gravity: number[]
+  rotation: number[]
   timestamp: number
 }
 
 export type Msg =
+  | { type: 'ENABLE_MOTION' }
   | {
-      type: 'MOTION'
-      quaternion: [number, number, number, number]
-      gravity: [number, number, number]
-      rotation: [number, number, number]
+      type: 'MOTION_EVENT'
+      quaternion: number[]
+      gravity: number[]
+      rotation: number[]
       timestamp: number
     }
-  | { type: 'NETWORK_IN'; payload: any }
+  | Payload

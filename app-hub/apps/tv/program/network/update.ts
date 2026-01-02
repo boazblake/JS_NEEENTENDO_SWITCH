@@ -1,6 +1,7 @@
 import type { NetworkModel, NetworkMsg } from './types'
 
 export const update = (msg: NetworkMsg, model: NetworkModel) => {
+  console.log('net', msg)
   switch (msg.type) {
     case 'Enable':
       return {

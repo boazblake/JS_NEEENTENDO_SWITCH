@@ -200,20 +200,20 @@ wss.on('connection', (socket) => {
       })
     }
 
-    const { domain, rest } = splitRoute(payload.type)
+    const { domain, type } = splitRoute(payload.type)
 
     // Core network control
     if (domain === 'NETWORK') {
-      if (rest === 'REGISTER') {
+      if (type === 'REGISTER') {
         return handleRegister(socket, payload.msg as any)
       }
 
-      if (rest === 'PING') {
+      if (type === 'PING') {
         safeSend(socket, { type: NetworkType.PONG, msg: {}, t: now() })
         return
       }
 
-      if (rest === 'PONG') return
+      if (type === 'PONG') return
     }
 
     // Session routing for everything else: requires msg.session
