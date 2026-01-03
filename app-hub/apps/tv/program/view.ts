@@ -43,7 +43,7 @@ export const view = (model: TVModel, dispatch: (msg: TVMsg) => void) => {
       break
     case 'menu':
     default:
-      content = Menu.view(model.lobby, dispatch, ctx)
+      content = Menu.view(model.menu, dispatch, ctx)
   }
 
   return layout(content, model, dispatch)

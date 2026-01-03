@@ -13,7 +13,7 @@ import { init as pacmanInit } from './pac-man/init'
 import * as Network from './network/'
 
 export const init = IO.IO<{ model: ControllerModel; effects: any[] }>(() => {
-  const name = 'Guest'
+  const name = Math.random().toString(36).substring(2, 7).toUpperCase()
 
   const lobby = lobbyInit.run().model
   const menu = menuInit.run().model

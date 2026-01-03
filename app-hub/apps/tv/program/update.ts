@@ -43,46 +43,52 @@ const makeCtx = (model: TVModel): TVContext => ({
   players: model.players
 })
 
+let ctx
 /* -------------------------------------------------- */
 /* update                                             */
 /* -------------------------------------------------- */
 
-export const update = (msg: TVMsg, model: TVModel, dispatch: Dispatch) => {
-  console.log('tv', msg, model)
+export const update = (
+  payload: TVMsg,
+  model: TVModel,
+  dispatch: Dispatch,
+  ctx
+) => {
+  ctx = model
+  console.log('tv', model.controllers)
   /* ---------- network wrapper ---------- */
 
-  if (msg.type === 'Network') {
-    const net = msg.msg
-
-    if (net.type === 'Inbound') {
+  if (payload.type === 'Network') {
+    if (payload.msg.type === 'Inbound') {
       return {
         model,
-        effects: [dispatchEffect(wireToPayload(net.msg), dispatch)]
+        effects: [payload.msg]
       }
     }
 
-    const next = Network.update(net, model.network)
+    const next = Network.update(payload.msg, model.network)
     return {
       model: { ...model, network: next.model },
       effects: next.effects
     }
   }
 
-  if (msg.type === 'Shutdown') {
+  if (payload.msg.type === 'Shutdown') {
     return {
       model: { ...model, network: { status: 'off' } },
       effects: []
     }
   }
 
-  const payload = msg as Payload
-  const ctx = makeCtx(model)
   /* ---------- payload ---------- */
   return routeByDomain(payload, model, {
     [MessageDomain.NETWORK]: (p, m) => {
-      // console.log('this', p, m)
+      console.log('this', m.controllers, model.controllers)
       const r = Network.update(p, m.network, dispatch)
-      return { model: { ...m, network: r.model }, effects: r.effects }
+      return {
+        model: { ...m, network: r.model },
+        effects: r.effects
+      }
     },
 
     [MessageDomain.LOBBY]: (p, m) => {
@@ -91,7 +97,8 @@ export const update = (msg: TVMsg, model: TVModel, dispatch: Dispatch) => {
     },
 
     [MessageDomain.CONTROLLERS]: (p, m) => {
-      const r = Controllers.update(p, m.controllers, dispatch)
+      const r = Controllers.update(p, m.controllers, dispatch, m)
+      console.log('updateing???', { ...m, controllers: r.model })
       return { model: { ...m, controllers: r.model }, effects: r.effects }
     },
 

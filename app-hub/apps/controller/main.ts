@@ -15,7 +15,7 @@ import '@ionic/core/css/core.css'
 import '@ionic/core/css/normalize.css'
 import '@ionic/core/css/structure.css'
 // Generate controller identity
-const id = Math.random().toString(36).substring(2, 10)
+const id = Math.random().toString(36).substring(2, 7).toUpperCase()
 
 // Build environment (NO live sockets)
 const env: ControllerEnv = {

@@ -33,8 +33,10 @@ export const update = (
       return { model, effects: [] }
 
     case 'SENSOR.MOTION':
-      dispatch({ type: 'CONTROLLERS.SENSOR.MOTION', msg: payload.msg })
-      return { model, effects: [] }
+      return {
+        model,
+        effects: [{ type: 'CONTROLLERS.SENSOR.MOTION', msg: payload.msg }]
+      }
     default:
       return { model, effects: [] }
   }

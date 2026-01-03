@@ -15,12 +15,18 @@ export const update = (
       return { model: m, effects: [] }
 
     case 'MOTION_EVENT': {
-      console.log('motion', payload)
+      console.log('motion', ctx)
       const { quaternion, gravity, rotation } = payload.msg
       const next: Model = { ...model, quaternion, gravity, rotation }
       dispatch({
         type: 'NETWORK.SENSOR.MOTION',
-        msg: { quaternion, gravity, rotation, session: ctx.session },
+        msg: {
+          quaternion,
+          gravity,
+          rotation,
+          session: ctx.session,
+          id: ctx.name
+        },
         t: payload.t
       })
 

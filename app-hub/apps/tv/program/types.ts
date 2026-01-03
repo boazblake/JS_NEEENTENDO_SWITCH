@@ -61,7 +61,7 @@ export type TVContext = {
   session: string
   screenW: number
   screenH: number
-  controllers: ControllersModel['controllers']
+  controllers: ControllersModel
   actions: ActionRect[]
   players: PlayerState[]
 }

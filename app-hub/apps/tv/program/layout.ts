@@ -30,11 +30,14 @@ export const layout = (
           'relative w-full h-full bg-gradient-to-b from-slate-900 to-slate-800 overflow-hidden'
       },
 
-      ...Object.values(model.controllers).map((c, idx) =>
-        m('div', {
-          class:
-            'fixed w-6 h-6 rounded-full pointer-events-none shadow-lg border-2 border-white',
-          style: `
+      ...Object.values(model.controllers).map((c, idx) => {
+        console.log(c, idx)
+        return m(
+          'div',
+          {
+            class:
+              'fixed w-6 h-6 rounded-full pointer-events-none shadow-lg border-2 border-white',
+            style: `
             left: 0;
             top: 0;
             transform: translate(${c.pointer.x}px, ${c.pointer.y}px);
@@ -45,8 +48,10 @@ export const layout = (
             z-index: 999999;
             will-change: transform;
           `
-        })
-      )
+          },
+          'wtf'
+        )
+      })
     ),
 
     m(

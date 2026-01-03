@@ -12,8 +12,6 @@ export type ControllerState = {
   spraying: boolean
 }
 
-export type Model = {
-  controllers: Record<string, ControllerState>
-}
+export type Model = Record<string, ControllerState>
 
 export type Msg = Payload

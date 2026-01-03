@@ -1,0 +1,740 @@
+
+
+==============================
+
+PATH: apps/tv/program/init.ts
+
+import { IO } from 'algebraic-fx'
+import { Screen } from '@shared/types'
+import { program as Controllers } from './controllers'
+import type { TVModel, TVMsg } from './types'
+import * as Network from './network'
+export const init = IO.IO(() => {
+  const session = Math.random().toString(36).substring(2, 7).toUpperCase()
+
+  const model: TVModel = {
+    session,
+    screen: Screen.MENU,
+
+    controllers: Controllers.init.run().model,
+    screenW: window.innerWidth,
+    screenH: window.innerHeight,
+
+    actions: [],
+    players: [],
+
+    menu: null,
+    calibration: null,
+    spray: null,
+    wordpond: null,
+    driving: null,
+    pacman: null,
+
+    network: Network.init()
+  }
+
+  const effects = [
+    {
+      type: 'NETWORK.ENABLE',
+      msg: { url: 'wss://192.168.7.195:8081' }
+    }
+  ]
+
+  return { model, effects }
+})
+
+
+
+==============================
+
+PATH: apps/tv/program/types.ts
+
+import type { Payload, Screen as SharedScreen } from '@shared/types'
+import type { NetworkModel, NetworkMsg } from './network'
+import type { Model as ControllersModel } from './controllers/'
+
+export type TVScreen = SharedScreen
+
+export type PointerState = {
+  x: number
+  y: number
+  hoveredId: string | null
+}
+
+export type ControllerState = {
+  pointer: PointerState
+  player: { id: string; name: string; slot: number } | null
+  spraying: boolean
+}
+
+export type ActionRect = {
+  id: string
+  rect: { x: number; y: number; w: number; h: number }
+}
+
+export type PlayerState = {
+  id: string
+  name: string
+  slot: number
+}
+
+// import type { Model as LobbyModel } from './lobby/types'
+import type { Model as MenuModel } from './menu/types'
+import type { Model as CalibrationModel } from './calibration/types'
+import type { Model as SprayModel } from './spray-can/types'
+import type { Model as WordPondModel } from './word-pond/types'
+import type { Model as DrivingModel } from './driving/types'
+import type { Model as PacManModel } from './pac-man/types'
+
+export type TVModel = {
+  session: string
+  screen: TVScreen
+
+  controllers: ControllersModel
+  screenW: number
+  screenH: number
+
+  actions: ActionRect[]
+  players: PlayerState[]
+
+  // lobby: LobbyModel
+  menu: MenuModel | null
+  calibration: CalibrationModel | null
+  spray: SprayModel | null
+  wordpond: WordPondModel | null
+  driving: DrivingModel | null
+  pacman: PacManModel | null
+
+  network: NetworkModel
+}
+
+export type TVContext = {
+  session: string
+  screenW: number
+  screenH: number
+  controllers: ControllersModel
+  actions: ActionRect[]
+  players: PlayerState[]
+}
+
+export type TVMsg =
+  | Payload
+  | { type: 'NETWORK'; msg: NetworkMsg }
+  | { type: 'Shutdown'; msg: {} }
+
+
+
+==============================
+
+PATH: apps/tv/program/update.ts
+
+import type { RawEffect, Dispatch } from 'algebraic-fx'
+import { MessageType, WordPondMsg, type Payload } from '@shared/types'
+import type { WireMsg } from '@shared/protocol'
+import type { TVEnv } from './env'
+import type { TVModel, TVContext, TVMsg } from './types'
+import * as Network from './network'
+import { splitRoute } from '@shared/utils'
+import { routeByDomain } from '@shared/router'
+import { MessageDomain } from '@shared/types'
+import { orientationToXY } from './effects'
+
+import { program as Lobby } from './lobby'
+import { program as Menu } from './menu'
+import { program as Calibration } from './calibration'
+import { program as Spray } from './spray-can'
+import { program as WordPond } from './word-pond'
+import { program as PacMan } from './pac-man'
+import { program as Driving } from './driving'
+import { program as Controllers } from './controllers'
+
+/* -------------------------------------------------- */
+/* helpers                                            */
+/* -------------------------------------------------- */
+
+const dispatchEffect = (
+  msg: TVMsg,
+  dispatch: Dispatch
+): RawEffect<TVEnv, TVMsg> => ({
+  run: (_env) => dispatch(msg)
+})
+
+const wireToPayload = (wire: WireMsg): Payload => ({
+  type: wire.type as any,
+  msg: wire.msg as any
+})
+
+const makeCtx = (model: TVModel): TVContext => ({
+  session: model.session,
+  screenW: model.screenW,
+  screenH: model.screenH,
+  controllers: model.controllers,
+  actions: model.actions,
+  players: model.players
+})
+
+/* -------------------------------------------------- */
+/* update                                             */
+/* -------------------------------------------------- */
+
+export const update = (msg: TVMsg, model: TVModel, dispatch: Dispatch) => {
+  console.log('tv', msg, model)
+  /* ---------- network wrapper ---------- */
+
+  if (msg.type === 'Network') {
+    const net = msg.msg
+
+    if (net.type === 'Inbound') {
+      return {
+        model,
+        effects: [dispatchEffect(wireToPayload(net.msg), dispatch)]
+      }
+    }
+
+    const next = Network.update(net, model.network)
+    return {
+      model: { ...model, network: next.model },
+      effects: next.effects
+    }
+  }
+
+  if (msg.type === 'Shutdown') {
+    return {
+      model: { ...model, network: { status: 'off' } },
+      effects: []
+    }
+  }
+
+  const payload = msg as Payload
+  const ctx = makeCtx(model)
+  /* ---------- payload ---------- */
+  return routeByDomain(payload, model, {
+    [MessageDomain.NETWORK]: (p, m) => {
+      console.log('this', p, m, model)
+      const r = Network.update(p, m.network, dispatch)
+      return {
+        model: { ...m, network: r.model },
+        effects: r.effects
+      }
+    },
+
+    [MessageDomain.LOBBY]: (p, m) => {
+      const r = Lobby.update(p, m.lobby, dispatch)
+      return { model: { ...m, lobby: r.model }, effects: r.effects }
+    },
+
+    [MessageDomain.CONTROLLERS]: (p, m) => {
+      const r = Controllers.update(p, m.controllers, dispatch, m)
+      console.log('updateing???', { ...m, controllers: r.model })
+      return { model: { ...m, controllers: r.model }, effects: r.effects }
+    },
+
+    [MessageDomain.CALIBRATION]: (p, m) => {
+      const r = Calibration.update(p, m.calibration, dispatch, model)
+      return {
+        model: { ...m, calibration: r.model },
+        effects: r.effects
+      }
+    }
+  })
+
+  // const { domain, type } = splitRoute(payload.type)
+  // console.log(domain, type, payload.msg)
+  //
+  // /* ---------- TV lobby routing ---------- */
+  //
+  // if (domain === MessageDomain.LOBBY) {
+  //   const r = Lobby.update(payload, model.lobby)
+  //   return {
+  //     model: { ...model, lobby: r.model },
+  //     effects: r.effects
+  //   }
+  // }
+  //
+  // /* ---------- Calibration routing (GAME domain) ---------- */
+  //
+  // if (domain === MessageDomain.CALIBRATION && model.calibration) {
+  //   const r = Calibration.update(payload, model.calibration, ctx)
+  //   return {
+  //     model: { ...model, calibration: r.model },
+  //     effects: r.effects
+  //   }
+  // }
+
+  /* ---------- legacy root handling (unchanged) ---------- */
+
+  switch (payload.type) {
+    case MessageType.RELAY_HELLO:
+      return { model, effects: [] }
+
+    case MessageType.NAVIGATE: {
+      const screen = payload.msg.screen as TVModel['screen']
+      return {
+        model: { ...model, screen },
+        effects: []
+      }
+    }
+
+    case 'ACTIONS_REGISTERED':
+      return {
+        model: { ...model, actions: payload.msg.actions || [] },
+        effects: []
+      }
+
+    case MessageType.PLAYER_JOINED: {
+      const players = [
+        ...model.players,
+        {
+          id: payload.msg.id || '',
+          name: payload.msg.name || 'Player',
+          slot: payload.msg.slot ?? model.players.length
+        }
+      ]
+
+      const screen: TVModel['screen'] =
+        players.length === 1 ? 'menu' : model.screen
+
+      return {
+        model: { ...model, players, screen },
+        effects: []
+      }
+    }
+
+    case 'RESIZE':
+      return {
+        model: {
+          ...model,
+          screenW: payload.msg.width,
+          screenH: payload.msg.height
+        },
+        effects: []
+      }
+
+    case MessageType.SPRAY_POINT:
+    case WordPondMsg.NET_UPDATE:
+    case WordPondMsg.SHAKE: {
+      if (!model.wordpond) return { model, effects: [] }
+      const r = WordPond.update(payload, model.wordpond, ctx)
+      return { model: { ...model, wordpond: r.model }, effects: r.effects }
+    }
+
+    default:
+      return { model, effects: [] }
+  }
+}
+
+
+
+==============================
+
+PATH: apps/tv/program/subs.ts
+
+import type { TVModel } from './model'
+import * as Network from './network'
+import type { Subscription } from 'algebraic-fx'
+
+// import { subs as calibrationSubs } from './calibration/subs'
+import { mapSub } from 'algebraic-fx'
+import type { TVEnv } from './env'
+import type { TVMsg } from './msg'
+
+export const subs = (model: TVModel): Subscription<TVEnv, TVMsg>[] => {
+  return [
+    ...Network.subs(model.network)
+    //   , ...calibrationSubs(model.calibration)
+  ]
+  // return Network.subs(model.network).map((s) =>
+  //   mapSub(s, (msg) => ({ type: 'NETWORK', msg }) as TVMsg)
+  // )
+}
+
+
+
+==============================
+
+PATH: apps/tv/program/layout.ts
+
+import { m } from 'algebraic-fx'
+import { MessageType, Screen, COLORS } from '@shared/types'
+import type { TVModel, TVMsg } from './types'
+
+export const layout = (
+  content: any,
+  model: TVModel,
+  dispatch: (m: TVMsg) => void
+) => {
+  const showBack =
+    model.screen === Screen.MENU ||
+    model.screen === Screen.CALIBRATION ||
+    model.screen === Screen.SPRAYCAN
+
+  const anyHoverMenu = Object.values(model.controllers).some(
+    (c) => c.pointer?.hoveredId === 'menu'
+  )
+
+  return m(
+    'div',
+    {
+      class:
+        'relative min-h-screen w-full flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white'
+    },
+
+    m(
+      'div',
+      {
+        class:
+          'relative w-full h-full bg-gradient-to-b from-slate-900 to-slate-800 overflow-hidden'
+      },
+
+      ...Object.values(model.controllers).map((c, idx) =>
+        m('div', {
+          class:
+            'fixed w-6 h-6 rounded-full pointer-events-none shadow-lg border-2 border-white',
+          style: `
+            left: 0;
+            top: 0;
+            transform: translate(${c.pointer.x}px, ${c.pointer.y}px);
+            background:${COLORS[idx].hex};
+            opacity: ${['pacman', 'driving'].includes(model.screen) ? 0.2 : 1};
+            mix-blend-mode: normal;
+            filter: none;
+            z-index: 999999;
+            will-change: transform;
+          `
+        })
+      )
+    ),
+
+    m(
+      'div',
+      {
+        class: 'flex-1 flex flex-col items-center justify-center w-full'
+      },
+      content
+    ),
+
+    showBack
+      ? m(
+          'button',
+          {
+            'data-action': 'menu',
+            class:
+              (anyHoverMenu
+                ? 'outline outline-4 outline-teal-400 '
+                : 'outline-none ') +
+              'mt-6 px-8 py-4 rounded-lg bg-gradient-to-r from-pink-500 to-rose-600 text-lg font-semibold shadow-lg hover:scale-105 transition',
+            onclick: () =>
+              dispatch({
+                type: 'Navigate',
+                screen: Screen.MENU
+              })
+          },
+          '← Back'
+        )
+      : null
+  )
+}
+
+
+
+==============================
+
+PATH: apps/tv/program/view.ts
+
+import { layout } from './layout'
+import { makeTVContext } from './context'
+import type { TVModel, TVMsg } from './types'
+
+// import { program as Lobby } from './lobby'
+import { program as Menu } from './menu'
+// import { program as Calibration } from './calibration'
+// import { program as Spray } from './spray-can'
+// import { program as WordPond } from './word-pond'
+// import { program as Driving } from './driving'
+// import { program as PacMan } from './pac-man'
+
+export const view = (model: TVModel, dispatch: (msg: TVMsg) => void) => {
+  const ctx = makeTVContext(model)
+
+  let content
+
+  switch (model.screen) {
+    case 'calibration':
+      content = model.calibration
+        ? Calibration.view(model.calibration, dispatch, ctx)
+        : Menu.view(model.lobby, dispatch, ctx)
+      break
+    case 'spraycan':
+      content = model.spray
+        ? Spray.view(model.spray, dispatch, ctx)
+        : Menu.view(model.lobby, dispatch, ctx)
+      break
+    case 'wordpond':
+      content = model.wordpond
+        ? WordPond.view(model.wordpond, dispatch, ctx)
+        : Menu.view(model.lobby, dispatch, ctx)
+      break
+    case 'pacman':
+      content = model.pacman
+        ? PacMan.view(model.pacman, dispatch, ctx)
+        : Menu.view(model.lobby, dispatch, ctx)
+      break
+    case 'driving':
+      content = model.driving
+        ? Driving.view(model.driving, dispatch, ctx)
+        : Menu.view(model.lobby, dispatch, ctx)
+      break
+    case 'menu':
+    default:
+      content = Menu.view(model.lobby, dispatch, ctx)
+  }
+
+  return layout(content, model, dispatch)
+}
+
+
+
+==============================
+
+PATH: apps/tv/program/controllers/types.ts
+
+import type { Payload } from '@shared/types'
+
+export type PointerState = {
+  x: number
+  y: number
+  hoveredId: string | null
+}
+
+export type ControllerState = {
+  pointer: PointerState
+  player: { id: string; name: string; slot: number } | null
+  spraying: boolean
+}
+
+export type Model = Record<string, ControllerState>
+
+export type Msg = Payload
+
+
+
+==============================
+
+PATH: apps/tv/program/controllers/init.ts
+
+import { IO } from 'algebraic-fx'
+import type { Model } from './types'
+
+export const init = IO.IO(() => ({
+  model: {} as Model,
+  effects: []
+}))
+
+
+
+==============================
+
+PATH: apps/tv/program/controllers/update.ts
+
+import { orientationToXY } from '../effects' // or wherever it lives
+import type { Model, Msg, ControllerState } from './types'
+import type { Dispatch } from 'algebraic-fx'
+
+export const update = (
+  payload: Msg,
+  model: Model,
+  dispatch: Dispatch,
+  ctx: {
+    screenW: number
+    screenH: number
+  }
+): { model: Model; effects: any[] } => {
+  switch (payload.type) {
+    case 'SENSOR.MOTION': {
+      const { id, quaternion, gravity } = payload.msg as any
+
+      const controller: ControllerState = model[id] ?? {
+        pointer: { x: ctx.screenW / 2, y: ctx.screenH / 2, hoveredId: null },
+        player: id,
+        spraying: false
+      }
+
+      const [x, y] = orientationToXY(
+        quaternion,
+        gravity,
+        ctx.screenW,
+        ctx.screenH,
+        {
+          invertX: true,
+          invertY: true,
+          dead: 0.03
+        }
+      )
+
+      return {
+        model: {
+          ...model,
+          [id]: {
+            ...controller,
+            pointer: {
+              ...controller.pointer,
+              x,
+              y
+            }
+          }
+        },
+        effects: []
+      }
+    }
+
+    case 'SESSION.PLAYER_JOINED': {
+      const { id, name, slot } = payload.msg as any
+
+      const controller: ControllerState = model[id] ?? {
+        pointer: { x: 0, y: 0, hoveredId: null },
+        player: null,
+        spraying: false
+      }
+
+      return {
+        model: {
+          ...model,
+          [id]: {
+            ...controller,
+            player: { id, name, slot }
+          }
+        },
+        effects: []
+      }
+    }
+
+    case 'SESSION.PLAYER_LEFT': {
+      const { id } = payload.msg as any
+      const { [id]: _, ...rest } = model
+      return { model: rest, effects: [] }
+    }
+
+    default:
+      return { model, effects: [] }
+  }
+}
+
+
+
+==============================
+
+PATH: apps/tv/program/network/init.ts
+
+import type { NetworkModel } from './types'
+
+export const init = (): NetworkModel => ({
+  status: 'disconnected',
+  url: null
+})
+
+
+
+==============================
+
+PATH: apps/tv/program/network/update.ts
+
+import type { NetworkModel, NetworkMsg } from './types'
+import type { Dispatch } from 'algebraic-fx'
+
+export const update = (
+  payload: NetworkMsg,
+  model: NetworkModel,
+  dispatch: Dispatch
+) => {
+  switch (payload.type) {
+    case 'ENABLE':
+      return {
+        model: { status: 'connecting', url: payload.msg.url },
+        effects: []
+      }
+
+    case 'Connected':
+      return {
+        model: { ...model, status: 'connected' },
+        effects: []
+      }
+
+    case 'Disconnected':
+      return {
+        model: { status: 'disconnected', url: model.url },
+        effects: []
+      }
+
+    case 'Send':
+      // outbound is handled by the subscription
+      return { model, effects: [] }
+
+    case 'Inbound':
+      return { model, effects: [] }
+
+    case 'SENSOR.MOTION':
+      dispatch({ type: 'CONTROLLERS.SENSOR.MOTION', msg: payload.msg })
+      return { model, effects: [] }
+    default:
+      return { model, effects: [] }
+  }
+}
+
+
+
+==============================
+
+PATH: apps/tv/program/network/subs.ts
+
+import { sub } from 'algebraic-fx'
+import type { TVEnv } from '../env'
+import type { NetworkModel } from './types'
+import type { Payload } from '@shared/types'
+
+let socket: WebSocket | null = null
+
+export const wsSub = (model: NetworkModel) => {
+  if (!model.url) return []
+
+  return [
+    sub<TVEnv, Payload>('tv:ws', (env, dispatch) => {
+      const ws = env.makeWebSocket(model.url)
+      socket = ws
+
+      ws.onopen = () => {
+        ws.send(
+          JSON.stringify({
+            type: 'NETWORK.REGISTER',
+            msg: {
+              role: 'TV',
+              id: env.session,
+              session: env.session
+            }
+          })
+        )
+      }
+      ws.onmessage = (e) => {
+        dispatch(JSON.parse(String(e.data)) as Payload)
+      }
+
+      ws.onclose = () => {
+        socket = null
+      }
+
+      ws.onerror = () => {
+        socket = null
+      }
+
+      return () => {
+        ws.close()
+        socket = null
+      }
+    })
+  ]
+}
+
+export const send = (payload: Payload) => {
+  if (!socket || socket.readyState !== WebSocket.OPEN) return
+  socket.send(JSON.stringify(payload))
+}
+

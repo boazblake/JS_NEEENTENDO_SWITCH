@@ -6,15 +6,20 @@ SEPARATOR=$'\n\n==============================\n\n'
 : > "$OUTPUT_FILE"
 
 FILES=(
-  apps/controller/program/update.ts
-  apps/controller/program/subs.ts
-  apps/controller/program/types.ts
-
+  apps/tv/program/init.ts
+  apps/tv/program/types.ts
   apps/tv/program/update.ts
   apps/tv/program/subs.ts
-  apps/tv/program/types.ts
+  apps/tv/program/layout.ts
+  apps/tv/program/view.ts
 
-  apps/tv/program/network/types.ts
+  apps/tv/program/controllers/types.ts
+  apps/tv/program/controllers/init.ts
+  apps/tv/program/controllers/update.ts
+
+  apps/tv/program/network/init.ts
+  apps/tv/program/network/update.ts
+  apps/tv/program/network/subs.ts
 )
 
 for FILE in "${FILES[@]}"; do
